@@ -37,7 +37,6 @@ export async function generateAiSummary(title: string, content: string): Promise
   const openRouterKey = (await getActiveApiKey('openrouter')) || process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY;
 
   if (openRouterKey) {
-    // Models to try in order of priority
     const modelsToTry = [
       'google/gemini-2.0-flash-001',
       'openai/gpt-4o-mini',
@@ -53,7 +52,7 @@ export async function generateAiSummary(title: string, content: string): Promise
             'Authorization': `Bearer ${openRouterKey}`,
             'Content-Type': 'application/json',
             'HTTP-Referer': 'https://sahras-hhiyeokulu.vercel.app',
-            'X-Title': 'Sahra Sıhhiye Okulu',
+            'X-Title': 'Sahra Sihhiye Okulu',
           },
           body: JSON.stringify({
             model: modelName,
@@ -132,7 +131,7 @@ export async function explainMedicalTermAi(term: string): Promise<string> {
           'Authorization': `Bearer ${openRouterKey}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': 'https://sahras-hhiyeokulu.vercel.app',
-          'X-Title': 'Sahra Sıhhiye Okulu',
+          'X-Title': 'Sahra Sihhiye Okulu',
         },
         body: JSON.stringify({
           model: 'google/gemini-2.0-flash-001',
