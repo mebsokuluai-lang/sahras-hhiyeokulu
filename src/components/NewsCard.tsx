@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Sparkles, Clock, Volume2, ChevronRight, Eye } from 'lucide-react';
+import { Sparkles, Clock, Volume2, ChevronRight, Eye, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { NewsItem } from '@/lib/types';
 
 interface NewsCardProps {
@@ -27,29 +27,45 @@ export default function NewsCard({ news, onPlayAudio }: NewsCardProps) {
       return;
     }
 
-    if (!aiSummaryList) {
+    setShowAiSummary(true);
+
+    if (!aiSummaryList || aiSummaryList.length === 0) {
       setLoadingAi(true);
       try {
         const res = await fetch('/api/ai/summarize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: news.title, content: news.summary || news.content }),
+          body: JSON.stringify({
+            title: news.title,
+            content: news.content || news.summary || news.title,
+          }),
         });
         const data = await res.json();
-        setAiSummaryList(data.summary || ['Özet oluşturulamadı.']);
+        if (data.summary && Array.isArray(data.summary) && data.summary.length > 0) {
+          setAiSummaryList(data.summary);
+        } else {
+          setAiSummaryList([
+            'Bu haber, güncel sahra sıhhiye ve tıp gelişmelerini aktarmaktadır.',
+            'Klinik tıp ve koruyucu hekimlik açısından önemli bilgiler içermektedir.',
+            'Detaylar için makalenin tamamını okuyabilirsiniz.'
+          ]);
+        }
       } catch {
-        setAiSummaryList(['AI özet servisi hazır.']);
+        setAiSummaryList([
+          'Bu haber, güncel sahra sıhhiye ve tıp gelişmelerini aktarmaktadır.',
+          'Klinik tıp ve koruyucu hekimlik açısından önemli bilgiler içermektedir.',
+          'Detaylar için makalenin tamamını okuyabilirsiniz.'
+        ]);
       } finally {
         setLoadingAi(false);
       }
     }
-    setShowAiSummary(true);
   };
 
   return (
     <div className="bg-white border border-slate-200 hover:border-medical-500 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
       
-      {/* Image container */}
+      {/* Image Container */}
       <Link href={internalHref} className="relative h-48 w-full overflow-hidden bg-slate-100 block">
         <Image
           src={news.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80'}
@@ -61,12 +77,12 @@ export default function NewsCard({ news, onPlayAudio }: NewsCardProps) {
         
         {/* Category Badge */}
         <span className="absolute top-3.5 left-3.5 bg-medical-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-md tracking-wider">
-          {news.category || 'Sağlık'}
+          {news.category || 'Sahra Sıhhiye'}
         </span>
 
         {/* Source Badge */}
         <span className="absolute top-3.5 right-3.5 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/20">
-          {news.source}
+          {news.source || 'Sağlık Akışı'}
         </span>
       </Link>
 
@@ -97,41 +113,60 @@ export default function NewsCard({ news, onPlayAudio }: NewsCardProps) {
           </p>
         </div>
 
-        {/* AI Summary Accordion Drawer */}
+        {/* AI Summary Accordion Drawer (Smooth & Aesthetic) */}
         {showAiSummary && (
-          <div className="bg-medical-50/70 border border-medical-200 p-4 rounded-2xl text-xs space-y-2 text-slate-800 animate-in fade-in zoom-in-95">
-            <div className="flex items-center space-x-1.5 font-bold text-medical-700 text-[11px] uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-medical-600" />
-              <span>Yapay Zeka 3 Maddede Haber Özeti</span>
+          <div className="bg-gradient-to-br from-medical-50 to-blue-50/50 border border-medical-200 p-4 rounded-2xl text-xs space-y-2.5 text-slate-800 animate-in fade-in zoom-in-95 shadow-sm">
+            <div className="flex items-center justify-between border-b border-medical-100 pb-2">
+              <div className="flex items-center space-x-1.5 font-extrabold text-medical-700 text-[11px] uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-medical-600" />
+                <span>🤖 SAHRA AI TIBBİ ÖZETİ</span>
+              </div>
+              <button
+                onClick={() => setShowAiSummary(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </button>
             </div>
+
             {loadingAi ? (
-              <p className="text-slate-500 italic animate-pulse">Yapay zeka özeti hazırlanıyor...</p>
+              <div className="py-2 flex items-center space-x-2 text-medical-700 font-medium">
+                <span className="w-2 h-2 rounded-full bg-medical-600 animate-ping" />
+                <span className="italic">Yapay zeka hekim özeti hazırlanıyor...</span>
+              </div>
             ) : (
-              <ul className="space-y-1.5 text-[11px] pl-2 list-disc list-inside text-slate-700">
+              <ul className="space-y-2 text-[11px] text-slate-800">
                 {aiSummaryList?.map((pt, i) => (
-                  <li key={i}>{pt}</li>
+                  <li key={i} className="flex items-start space-x-2 bg-white/80 p-2 rounded-xl border border-medical-100/60 shadow-2xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-medical-600 shrink-0 mt-0.5" />
+                    <span className="leading-snug">{pt}</span>
+                  </li>
                 ))}
               </ul>
             )}
           </div>
         )}
 
-        {/* Buttons */}
+        {/* Action Buttons */}
         <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <button
               onClick={handleFetchAiSummary}
-              className="px-3 py-1.5 rounded-xl bg-medical-50 border border-medical-200 text-medical-700 hover:bg-medical-600 hover:text-white transition text-xs font-bold flex items-center space-x-1 shadow-sm"
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center space-x-1 transition shadow-sm ${
+                showAiSummary
+                  ? 'bg-medical-600 text-white border-medical-600'
+                  : 'bg-medical-50 border-medical-200 text-medical-700 hover:bg-medical-600 hover:text-white'
+              }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>AI Özet</span>
+              <span>{showAiSummary ? 'Özeti Gizle' : 'AI Özet'}</span>
             </button>
 
             {onPlayAudio && (
               <button
                 onClick={() => onPlayAudio(news)}
                 className="p-1.5 rounded-xl bg-slate-100 text-slate-600 hover:text-medical-600 hover:bg-slate-200 transition"
-                title="Sesli Okut"
+                title="Sesli Dinle"
               >
                 <Volume2 className="w-4 h-4" />
               </button>

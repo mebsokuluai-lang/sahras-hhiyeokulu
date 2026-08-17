@@ -5,7 +5,7 @@ export const DEFAULT_HEALTH_RSS_SOURCES: RssSource[] = [
   {
     name: 'Medimagazin Sağlık',
     url: 'https://www.medimagazin.com.tr/rss',
-    category: 'Tıp & Camia',
+    category: 'Tıp & Klinik',
     isActive: true,
   },
   {
@@ -28,36 +28,71 @@ export const DEFAULT_HEALTH_RSS_SOURCES: RssSource[] = [
   },
 ];
 
-function cleanHtmlText(html: string): string {
+function sanitizeHtmlText(html: string): string {
   if (!html) return '';
   return html
-    .replace(/<!\[CDATA\[(.*?)\]\]>/gi, '$1')
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1')
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/gi, ' ')
     .replace(/&amp;/gi, '&')
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'")
+    .replace(/&apos;/gi, "'")
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>')
-    .replace(/\s+/g, ' ')
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
     .trim();
+}
+
+function extractImageUrl(itemXml: string): string | null {
+  // 1. media:content or media:thumbnail url
+  const mediaMatch = itemXml.match(/<media:(?:content|thumbnail)[^>]+url=["']([^"']+)["']/i);
+  if (mediaMatch && mediaMatch[1]) return mediaMatch[1].trim();
+
+  // 2. enclosure url with image mime type
+  const enclosureMatch = itemXml.match(/<enclosure[^>]+url=["']([^"']+)["']/i);
+  if (enclosureMatch && enclosureMatch[1]) return enclosureMatch[1].trim();
+
+  // 3. img src tag inside description or content
+  const imgMatch = itemXml.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (imgMatch && imgMatch[1]) return imgMatch[1].trim();
+
+  return null;
 }
 
 export async function fetchRssFeed(url: string, sourceName: string, category: string): Promise<Partial<NewsItem>[]> {
   try {
-    const response = await fetch(url, { next: { revalidate: 300 } });
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+      },
+      next: { revalidate: 300 }
+    });
+
     if (!response.ok) return [];
 
     const xmlText = await response.text();
     const items: Partial<NewsItem>[] = [];
 
-    // Match RSS items
+    // Match each <item> block in the XML
     const itemRegex = /<item[\s\S]*?>([\s\S]*?)<\/item>/gi;
     let match;
 
-    while ((match = itemRegex.exec(xmlText)) !== null && items.length < 15) {
+    const defaultImages = [
+      'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1587370560942-ad2a04eabb6d?w=800&auto=format&fit=crop&q=80'
+    ];
+
+    let imgIndex = 0;
+
+    while ((match = itemRegex.exec(xmlText)) !== null && items.length < 20) {
       const itemXml = match[1];
 
       const titleMatch = itemXml.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i);
@@ -65,18 +100,27 @@ export async function fetchRssFeed(url: string, sourceName: string, category: st
       const contentEncodedMatch = itemXml.match(/<content:encoded>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/content:encoded>/i);
       const descMatch = itemXml.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i);
       const pubDateMatch = itemXml.match(/<pubDate>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/pubDate>/i);
-      const imgMatch = itemXml.match(/<media:content[^>]+url=["']([^"']+)["']/i) || 
-                       itemXml.match(/<enclosure[^>]+url=["']([^"']+)["']/i) ||
-                       itemXml.match(/<img[^>]+src=["']([^"']+)["']/i);
 
       if (titleMatch && linkMatch) {
-        const title = cleanHtmlText(titleMatch[1]);
-        const fullContent = cleanHtmlText(contentEncodedMatch ? contentEncodedMatch[1] : (descMatch ? descMatch[1] : ''));
+        const title = sanitizeHtmlText(titleMatch[1]);
+        const fullContent = sanitizeHtmlText(contentEncodedMatch ? contentEncodedMatch[1] : (descMatch ? descMatch[1] : ''));
         const link = linkMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/gi, '$1').trim();
-        const image = imgMatch ? imgMatch[1] : 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80';
-        const pubDate = pubDateMatch ? new Date(pubDateMatch[1].trim()).toISOString() : new Date().toISOString();
+        const extractedImg = extractImageUrl(itemXml);
+        const image = extractedImg || defaultImages[imgIndex % defaultImages.length];
+        imgIndex++;
 
-        const summary = fullContent.length > 280 ? fullContent.substring(0, 280) + '...' : fullContent;
+        let pubDate = new Date().toISOString();
+        if (pubDateMatch && pubDateMatch[1]) {
+          try {
+            pubDate = new Date(pubDateMatch[1].trim()).toISOString();
+          } catch {
+            pubDate = new Date().toISOString();
+          }
+        }
+
+        const summary = fullContent.length > 280
+          ? fullContent.substring(0, 280).replace(/\s\S*$/, '') + '...'
+          : fullContent;
 
         if (title.length > 3 && link.length > 5) {
           items.push({
