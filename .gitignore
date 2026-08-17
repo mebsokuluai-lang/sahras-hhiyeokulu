@@ -1,0 +1,28 @@
+# Next.js & Node
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Old Python Temporary files
+__pycache__/
+*.pyc
+news_data.json

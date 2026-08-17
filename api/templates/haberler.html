@@ -1,0 +1,1402 @@
+{% extends "base.html" %}
+
+{% block title %}Haberler - Teknoloji Haberleri{% endblock %}
+
+{% block extra_css %}
+    <style>
+    .haberler-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+    
+    .page-header h1 {
+        margin: 0;
+    }
+    
+    .filter-bar {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    /* Collapsible Section */
+    .collapsible-section {
+        border-radius: 10px;
+        margin-bottom: 15px;
+        overflow: hidden;
+    }
+    
+    .collapsible-header {
+        cursor: pointer;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        user-select: none;
+    }
+    
+    .collapsible-header h3 {
+        margin: 0;
+        font-size: 1.1em;
+    }
+    
+    .collapsible-header .info-text {
+        font-size: 0.85em;
+        opacity: 0.8;
+        margin-top: 5px;
+        font-weight: normal;
+    }
+    
+    .collapse-icon {
+        font-size: 1.2em;
+        transition: transform 0.3s ease;
+    }
+    
+    .collapsible-section.expanded .collapse-icon {
+        transform: rotate(180deg);
+    }
+    
+    .collapsible-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        padding: 0 20px;
+    }
+    
+    .collapsible-section.expanded .collapsible-content {
+        max-height: 500px;
+        padding: 15px 20px;
+    }
+    
+    /* Kategori Filter (Admin only) */
+    .kategori-filter {
+        background: white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .kategori-filter .collapsible-header {
+        background: #f5f5f5;
+    }
+    
+    .kategori-checkboxes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .kategori-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .kategori-checkbox input {
+        width: 16px;
+        height: 16px;
+    }
+    
+    /* Filter Tags Bar (Admin only) */
+    .filter-tags-bar {
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        color: white;
+    }
+    
+    .filter-tags-bar .collapsible-header {
+        background: transparent;
+    }
+    
+    .tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    /* Editable Fields */
+    .editable-field {
+        position: relative;
+    }
+    
+    .editable-content {
+        padding: 8px;
+        border: 2px dashed transparent;
+        border-radius: 5px;
+        transition: all 0.2s ease;
+        min-height: 30px;
+    }
+    
+    .editable-content:hover {
+        border-color: #ddd;
+        background: #fafafa;
+    }
+    
+    .editable-content:focus {
+        outline: none;
+        border-color: #1976d2;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    }
+    
+    .editable-content.modified {
+        border-color: #ff9800;
+        background: #fff8e1;
+    }
+    
+    .edit-indicator {
+        font-size: 0.8em;
+        color: #999;
+        margin-left: 10px;
+    }
+    
+    .edit-buttons {
+        display: inline-flex;
+        gap: 5px;
+        margin-left: 10px;
+        align-items: center;
+    }
+    
+    .save-edit-btn, .undo-btn, .redo-btn {
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.8em;
+        display: none;
+    }
+    
+    .save-edit-btn.visible, .undo-btn.visible, .redo-btn.visible {
+        display: inline-block;
+    }
+    
+    .save-edit-btn:hover {
+        background: #388e3c;
+    }
+    
+    .undo-btn {
+        background: #ff9800;
+    }
+    
+    .undo-btn:hover {
+        background: #f57c00;
+    }
+    
+    .redo-btn {
+        background: #2196f3;
+    }
+    
+    .redo-btn:hover {
+        background: #1976d2;
+    }
+    
+    .autosave-indicator {
+        font-size: 0.75em;
+        color: #666;
+        margin-left: 5px;
+        display: none;
+    }
+    
+    .autosave-indicator.visible {
+        display: inline;
+    }
+    
+    .autosave-indicator.saving {
+        color: #ff9800;
+    }
+    
+    .autosave-indicator.saved {
+        color: #4caf50;
+    }
+    
+    .text-stats {
+        font-size: 0.8em;
+        color: #888;
+        margin-top: 5px;
+        display: flex;
+        gap: 15px;
+    }
+    
+    .text-stats .char-count,
+    .text-stats .word-count {
+        background: #f5f5f5;
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+    
+    /* Manual News Form */
+    .add-news-section {
+        background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+        color: white;
+        margin-bottom: 15px;
+    }
+    
+    .add-news-section .collapsible-header {
+        background: transparent;
+    }
+    
+    .add-news-form input,
+    .add-news-form textarea {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: none;
+        border-radius: 5px;
+        font-size: 0.95em;
+    }
+    
+    .add-news-form textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .add-news-form button {
+        background: white;
+        color: #388e3c;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    
+    .add-news-form button:hover {
+        background: #f5f5f5;
+    }
+    
+    .tag-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9em;
+    }
+    
+    .tag-chip.preferred {
+        background: rgba(76, 175, 80, 0.3);
+        border: 2px solid #4caf50;
+    }
+    
+    .tag-chip.not-preferred {
+        background: rgba(244, 67, 54, 0.3);
+        border: 2px solid #f44336;
+    }
+    
+    .tag-chip.selected {
+        background: rgba(255, 255, 255, 0.9) !important;
+        color: #1a237e !important;
+        border-color: white !important;
+    }
+    
+    .tag-chip input {
+        display: none;
+    }
+    
+    .tag-chip:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .tag-indicator {
+        font-size: 0.8em;
+    }
+    
+    .save-tags-btn {
+        background: white;
+        color: #1a237e;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    
+    .save-tags-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .owner-badge {
+        font-size: 0.75em;
+        opacity: 0.7;
+    }
+    
+    /* News Table */
+    .news-table {
+            width: 100%;
+            border-collapse: collapse;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .news-item {
+        border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .news-item:last-child {
+        border-bottom: none;
+    }
+    
+    .news-item th {
+        background-color: #f5f5f5;
+        padding: 12px 15px;
+            text-align: left;
+        width: 150px;
+        vertical-align: top;
+        color: #555;
+        font-weight: 600;
+    }
+    
+    .news-item td {
+        padding: 12px 15px;
+        vertical-align: top;
+    }
+    
+        .content-cell {
+        max-width: 600px;
+        line-height: 1.6;
+    }
+    
+    .news-title {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #1a237e;
+    }
+    
+    .news-title.sent {
+        background: linear-gradient(90deg, #fff59d 0%, #fff9c4 100%);
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+    
+    /* Sent Filter Toggle */
+    .filter-toggle-bar {
+        background: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .filter-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 26px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.3s;
+        border-radius: 26px;
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+    }
+    
+    .toggle-switch input:checked + .toggle-slider {
+        background-color: #4caf50;
+    }
+    
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+    
+    .filter-hint {
+        font-size: 0.9em;
+        color: #666;
+        padding: 8px 15px;
+        background: #f5f5f5;
+        border-radius: 20px;
+    }
+    
+    .filter-hint.active {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+    
+    /* Hidden sent news when filter is active */
+    .news-item.sent-item.hide-sent {
+        display: none;
+    }
+    
+    .news-source {
+        display: inline-block;
+        background: #e3f2fd;
+        color: #1565c0;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 0.85em;
+    }
+    
+    .news-date {
+            color: #666;
+        }
+    
+    .news-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .news-tag {
+        background: #f0f0f0;
+        color: #555;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.85em;
+    }
+    
+    .news-category {
+        display: inline-block;
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        color: white;
+        padding: 5px 15px;
+        border-radius: 15px;
+        font-size: 0.9em;
+    }
+    
+    .interest-score {
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+    
+    .score-high {
+        color: #2e7d32;
+    }
+    
+    .score-medium {
+        color: #f57c00;
+    }
+    
+    .score-low {
+        color: #d32f2f;
+    }
+    
+    .status-sent {
+        color: #2e7d32;
+        font-weight: 500;
+    }
+    
+    .status-not-sent {
+        color: #f57c00;
+    }
+    
+    .news-link a {
+        color: #1976d2;
+        text-decoration: none;
+    }
+    
+    .news-link a:hover {
+        text-decoration: underline;
+    }
+    
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 15px;
+    }
+    
+        .gonderildi-btn {
+        background-color: #f44336;
+            color: white;
+            border: none;
+        padding: 10px 20px;
+            cursor: pointer;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .gonderildi-btn:hover {
+        background-color: #d32f2f;
+        transform: translateY(-2px);
+    }
+    
+        .whatsapp-btn {
+        background-color: #25D366;
+            color: white;
+            border: none;
+        padding: 10px 20px;
+            cursor: pointer;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .whatsapp-btn:hover {
+        background-color: #1da851;
+        transform: translateY(-2px);
+    }
+    
+    .news-separator {
+        height: 30px;
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .empty-state h2 {
+        color: #999;
+        margin-bottom: 10px;
+    }
+    
+    .empty-state p {
+        color: #666;
+    }
+    
+    .news-count {
+        background: #e3f2fd;
+        color: #1565c0;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.95em;
+    }
+    
+    /* ============================================
+       RESPONSIVE STYLES - Mobile
+       ============================================ */
+    
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .page-header h1 {
+            font-size: 1.4em;
+        }
+        
+        .filter-bar {
+            width: 100%;
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        /* Collapsible sections mobile */
+        .collapsible-header {
+            padding: 12px 15px;
+        }
+        
+        .collapsible-header h3 {
+            font-size: 1em;
+        }
+        
+        .collapsible-section.expanded .collapsible-content {
+            padding: 12px 15px;
+        }
+        
+        /* Tags on mobile */
+        .tags-container {
+            gap: 8px;
+        }
+        
+        .tag-chip {
+            font-size: 0.8em;
+            padding: 6px 10px;
+        }
+        
+        .kategori-checkboxes {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        /* News table mobile - stack layout */
+        .news-table {
+            display: block;
+        }
+        
+        .news-item {
+            display: block;
+            padding: 15px;
+        }
+        
+        .news-item tr {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+        }
+        
+        .news-item th {
+            width: 100%;
+            padding: 5px 0;
+            font-size: 0.85em;
+            background: transparent;
+            color: #666;
+        }
+        
+        .news-item td {
+            padding: 5px 0;
+        }
+        
+        .content-cell {
+            max-width: 100%;
+        }
+        
+        .news-title {
+            font-size: 1em;
+        }
+        
+        .editable-content {
+            padding: 10px;
+            font-size: 0.95em;
+        }
+        
+        .edit-buttons {
+            margin-left: 0;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .text-stats {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        /* Action buttons mobile */
+        .action-buttons {
+            flex-direction: column;
+            padding: 10px;
+            gap: 8px;
+        }
+        
+        .gonderildi-btn,
+        .whatsapp-btn {
+            width: 100%;
+            padding: 12px 20px;
+        }
+        
+        .news-separator {
+            height: 20px;
+        }
+        
+        /* Add news form mobile */
+        .add-news-form input,
+        .add-news-form textarea {
+            font-size: 16px; /* Prevents iOS zoom */
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .page-header h1 {
+            font-size: 1.2em;
+        }
+        
+        .news-count {
+            font-size: 0.85em;
+            padding: 6px 12px;
+        }
+        
+        .interest-score {
+            font-size: 1em;
+        }
+        
+        .news-source,
+        .news-category {
+            font-size: 0.8em;
+        }
+        
+        .save-edit-btn,
+        .undo-btn,
+        .redo-btn {
+            padding: 8px 12px;
+            font-size: 0.75em;
+        }
+    }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="haberler-container">
+    <div class="page-header">
+        <h1>📰 Haberler</h1>
+        <span class="news-count">{{ haberler|length }} haber gösteriliyor</span>
+    </div>
+    
+    <!-- Manual News Addition (Admin only) -->
+    {% if is_admin %}
+    <div class="collapsible-section add-news-section" id="add-news-section">
+        <div class="collapsible-header" onclick="toggleCollapsible('add-news-section')">
+            <div>
+                <h3>➕ Manuel Haber Ekle</h3>
+                <div class="info-text">Farklı kaynaklardan haber eklemek için kullanın. Eklenen haberler otomatik işlenir.</div>
+            </div>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="collapsible-content">
+            <form class="add-news-form" method="POST" action="{{ url_for('add_manual_news') }}">
+                <input type="text" name="title" placeholder="Haber Başlığı (zorunlu)" required>
+                <textarea name="content" placeholder="Haber İçeriği (zorunlu)" required></textarea>
+                <input type="url" name="link" placeholder="Kaynak Linki (zorunlu)" required>
+                <input type="text" name="source" placeholder="Kaynak Adı (zorunlu, örn: Reuters)" required>
+                <button type="submit">📥 Haberi Ekle</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Filter Tags Bar (Admin only) -->
+    {% if is_admin and all_tags %}
+    <div class="collapsible-section filter-tags-bar" id="filter-tags-section">
+        <div class="collapsible-header" onclick="toggleCollapsible('filter-tags-section')">
+            <div>
+                <h3>🏷️ Filtre Etiketleri</h3>
+                <div class="info-text">Haber işleme için tercih edilen ve edilmeyen etiketleri seçin.</div>
+            </div>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="collapsible-content">
+            <form method="POST" action="{{ url_for('update_user_tags') }}">
+                <div class="tags-container">
+                    {% for tag in all_tags %}
+                    <label class="tag-chip {% if tag.preferred %}preferred{% else %}not-preferred{% endif %} {% if tag.tag in user_selected_tags %}selected{% endif %}">
+                        <input type="checkbox" name="selected_tags" value="{{ tag.tag }}" 
+                               {% if tag.tag in user_selected_tags %}checked{% endif %}
+                               onchange="this.parentElement.classList.toggle('selected')">
+                        <span class="tag-indicator">{% if tag.preferred %}✓{% else %}✗{% endif %}</span>
+                        <span>{{ tag.tag }}</span>
+                        {% if tag.owner %}
+                        <span class="owner-badge">({{ tag.owner }})</span>
+                        {% endif %}
+                    </label>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="save-tags-btn">💾 Seçimleri Kaydet</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Kategori Filter (Admin only) -->
+    {% if is_admin and all_kategoriler %}
+    <div class="collapsible-section kategori-filter" id="kategori-filter-section">
+        <div class="collapsible-header" onclick="toggleCollapsible('kategori-filter-section')">
+            <div>
+                <h3>🏷️ Kategorilere Göre Filtrele</h3>
+                <div class="info-text">⚠️ Hiçbiri seçili değilse filtre uygulanmaz, bütün haberler gösterilir.</div>
+            </div>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="collapsible-content">
+            <form method="POST" action="{{ url_for('update_kategoriler_filter') }}">
+                <div style="margin-bottom: 10px;">
+                    <label class="kategori-checkbox" style="font-weight: bold; color: #1976d2;">
+                        <input type="checkbox" id="select-all-kategoriler" onclick="toggleAllKategoriler(this)">
+                        <span>Hepsini Seç</span>
+                    </label>
+                </div>
+                <div class="kategori-checkboxes">
+                    {% for kat in all_kategoriler %}
+                    <label class="kategori-checkbox">
+                        <input type="checkbox" name="kategoriler" value="{{ kat }}" class="kategori-item"
+                               {% if kat in selected_kategoriler %}checked{% endif %}>
+                        <span>{{ kat }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Filtrele</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if haberler %}
+    <!-- Sent Filter Toggle -->
+    <div class="filter-toggle-bar">
+        <div class="filter-toggle">
+            <label class="toggle-switch">
+                <input type="checkbox" id="hide-sent-toggle" onchange="toggleSentFilter(this)">
+                <span class="toggle-slider"></span>
+            </label>
+            <span>Sadece gönderilmeyenleri göster</span>
+        </div>
+        <span class="filter-hint" id="filter-hint">Tüm haberler gösteriliyor</span>
+    </div>
+    
+    <table class="news-table">
+        {% for haber in haberler %}
+        <tbody class="news-item {% if haber.gonderildi %}sent-item{% endif %}" data-link="{{ haber.link }}">
+            <tr>
+                <th>Başlık <span class="edit-indicator">✏️ düzenlenebilir</span></th>
+                <td class="news-title {% if haber.gonderildi %}sent{% endif %} editable-field">
+                    <div class="editable-content" 
+                         contenteditable="true" 
+                         data-field="title_turkish"
+                         data-link="{{ haber.link }}"
+                         data-original="{{ haber.title_turkish or haber.title_english or '' }}"
+                         onblur="checkModified(this)"
+                         oninput="handleEdit(this)">{{ haber.title_turkish or haber.title_english or 'N/A' }}</div>
+                    <div class="edit-buttons">
+                        <button class="undo-btn" onclick="undoEdit(this)" title="Geri Al">↩️</button>
+                        <button class="redo-btn" onclick="redoEdit(this)" title="İleri Al">↪️</button>
+                        <button class="save-edit-btn" onclick="saveEdit(this, '{{ haber.link }}', 'title_turkish')">💾 Kaydet</button>
+                        <span class="autosave-indicator">otomatik kaydediliyor...</span>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th>İlgi Puanı</th>
+                <td>
+                    {% set score = haber.interest_score or 0 %}
+                    <span class="interest-score {% if score >= 7 %}score-high{% elif score >= 4 %}score-medium{% else %}score-low{% endif %}">
+                        {{ score }}/10
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <th>Kaynak</th>
+                <td><span class="news-source">{{ haber.source or 'N/A' }}</span></td>
+            </tr>
+            <tr>
+                <th>Tarih</th>
+                <td class="news-date">{{ haber.date_turkish or haber.date_english or 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Özet <span class="edit-indicator">✏️ düzenlenebilir</span></th>
+                <td class="content-cell editable-field">
+                    <div class="editable-content" 
+                         contenteditable="true" 
+                         data-field="summary_turkish"
+                         data-link="{{ haber.link }}"
+                         data-original="{{ haber.summary_turkish or '' }}"
+                         onblur="checkModified(this)"
+                         oninput="handleEdit(this)">{{ haber.summary_turkish or 'N/A' }}</div>
+                    <div class="text-stats">
+                        <span class="char-count">{{ (haber.summary_turkish or '')|length }} karakter</span>
+                        <span class="word-count">{{ (haber.summary_turkish or '').split()|length }} kelime</span>
+                    </div>
+                    <div class="edit-buttons">
+                        <button class="undo-btn" onclick="undoEdit(this)" title="Geri Al">↩️</button>
+                        <button class="redo-btn" onclick="redoEdit(this)" title="İleri Al">↪️</button>
+                        <button class="save-edit-btn" onclick="saveEdit(this, '{{ haber.link }}', 'summary_turkish')">💾 Kaydet</button>
+                        <span class="autosave-indicator">otomatik kaydediliyor...</span>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th>İçerik <span class="edit-indicator">✏️ düzenlenebilir</span></th>
+                <td class="content-cell editable-field">
+                    <div class="editable-content" 
+                         contenteditable="true" 
+                         data-field="content_turkish"
+                         data-link="{{ haber.link }}"
+                         data-original="{{ haber.content_turkish or haber.content_english or '' }}"
+                         onblur="checkModified(this)"
+                         oninput="handleEdit(this)">{{ haber.content_turkish or haber.content_english or 'N/A' }}</div>
+                    <div class="text-stats">
+                        <span class="char-count">{{ (haber.content_turkish or haber.content_english or '')|length }} karakter</span>
+                        <span class="word-count">{{ (haber.content_turkish or haber.content_english or '').split()|length }} kelime</span>
+                    </div>
+                    <div class="edit-buttons">
+                        <button class="undo-btn" onclick="undoEdit(this)" title="Geri Al">↩️</button>
+                        <button class="redo-btn" onclick="redoEdit(this)" title="İleri Al">↪️</button>
+                        <button class="save-edit-btn" onclick="saveEdit(this, '{{ haber.link }}', 'content_turkish')">💾 Kaydet</button>
+                        <span class="autosave-indicator">otomatik kaydediliyor...</span>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th>Etiketler</th>
+                <td>
+                    <div class="news-tags">
+                        {% for tag in (haber.tags or []) %}
+                        <span class="news-tag">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th>Kategori</th>
+                <td><span class="news-category">{{ haber.category or 'N/A' }}</span></td>
+            </tr>
+            <tr>
+                <th>Gönderildi mi?</th>
+                <td>
+                    {% if haber.gonderildi %}
+                    <span class="status-sent">✓ Gönderildi</span>
+                    {% else %}
+                    <span class="status-not-sent">○ Gönderilmedi</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Kaynak Link</th>
+                <td class="news-link">
+                    <a href="{{ haber.link }}" target="_blank">🔗 Haberin Kaynağına Git</a>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" class="action-buttons">
+                    {% if is_admin %}
+                    <button onclick="updateStatus('{{ haber.link }}')" class="gonderildi-btn">📤 Gönderildi Olarak İşaretle</button>
+                    {% endif %}
+                    
+                    <button 
+                        onclick="openPreview('{{ haber.link | e }}')" 
+                        class="whatsapp-btn"
+                        style="background-color: #1976d2;"
+                    >📝 Gönderim Öncesi Ön İzleme</button>
+                </td>
+            </tr>
+        </tbody>
+        <tr class="news-separator"><td colspan="2"></td></tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <h2>📭 Haber Bulunamadı</h2>
+        <p>Seçili kriterlere uygun haber bulunmamaktadır. Filtre ayarlarınızı değiştirmeyi deneyin.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+// --- ENSURE ALL FUNCTIONS ARE DEFINED BEFORE USE ---
+
+// --- COOKIE HELPER FUNCTIONS ---
+function getCookie(name) {
+    var value = "; " + document.cookie;
+    var parts = value.split("; " + name + "=");
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
+}
+
+function setCookie(name, value, days) {
+    var d = new Date();
+    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = name + "=" + value + ";expires=" + d.toUTCString() + ";path=/";
+}
+
+// --- SENT FILTER TOGGLE ---
+function toggleSentFilter(checkbox) {
+    var sentItems = document.querySelectorAll('.news-item.sent-item');
+    var filterHint = document.getElementById('filter-hint');
+    
+    if (checkbox.checked) {
+        // Hide sent items
+        sentItems.forEach(function(item) {
+            item.classList.add('hide-sent');
+        });
+        filterHint.textContent = 'Gönderilen haberler gizleniyor';
+        filterHint.classList.add('active');
+    } else {
+        // Show all items
+        sentItems.forEach(function(item) {
+            item.classList.remove('hide-sent');
+        });
+        filterHint.textContent = 'Tüm haberler gösteriliyor';
+        filterHint.classList.remove('active');
+    }
+    
+    // Save preference to cookie (30-day expiry)
+    setCookie('hide_sent_news', checkbox.checked, 30);
+}
+
+// --- COLLAPSIBLE TOGGLE ---
+function toggleCollapsible(sectionId) {
+    var section = document.getElementById(sectionId);
+    if (section) {
+        section.classList.toggle('expanded');
+    }
+}
+
+// --- KATEGORI SELECT ALL ---
+function toggleAllKategoriler(checkbox) {
+    var items = document.querySelectorAll('.kategori-item');
+    items.forEach(function(item) {
+        item.checked = checkbox.checked;
+    });
+}
+
+    // --- GÖNDERİLDİ FONKSİYONU ---
+    function updateStatus(link) {
+        console.log(`Sending request to mark as sent: ${link}`);
+        
+        fetch('/gonderildi', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ link: link })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success' || data.status === 'info') {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert('Hata: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Bir hata oluştu (fetch)');
+            });
+    }
+
+// --- EDITABLE FIELD FUNCTIONS ---
+var editHistory = {};  // Store undo/redo history per element
+var autosaveTimers = {};  // Store autosave timers per element
+
+function getElementId(element) {
+    return element.dataset.link + '_' + element.dataset.field;
+}
+
+function initHistory(element) {
+    var id = getElementId(element);
+    if (!editHistory[id]) {
+        editHistory[id] = {
+            history: [element.dataset.original],
+            position: 0
+        };
+    }
+}
+
+function handleEdit(element) {
+    var id = getElementId(element);
+    initHistory(element);
+    
+    // Add to history
+    var current = element.innerText.trim();
+    var hist = editHistory[id];
+    
+    // Remove any redo history
+    hist.history = hist.history.slice(0, hist.position + 1);
+    hist.history.push(current);
+    hist.position = hist.history.length - 1;
+    
+    // Mark as modified
+    element.classList.add('modified');
+    
+    // Update text stats
+    updateTextStats(element);
+    
+    // Show buttons
+    var statsDiv = element.nextElementSibling;
+    var buttonsDiv = statsDiv ? statsDiv.nextElementSibling : null;
+    if (buttonsDiv && buttonsDiv.classList.contains('edit-buttons')) {
+        var undoBtn = buttonsDiv.querySelector('.undo-btn');
+        var redoBtn = buttonsDiv.querySelector('.redo-btn');
+        var saveBtn = buttonsDiv.querySelector('.save-edit-btn');
+        
+        if (undoBtn) undoBtn.classList.add('visible');
+        if (saveBtn) saveBtn.classList.add('visible');
+        if (redoBtn) redoBtn.classList.remove('visible');
+    }
+    
+    // Setup autosave (10 seconds)
+    if (autosaveTimers[id]) {
+        clearTimeout(autosaveTimers[id]);
+    }
+    
+    autosaveTimers[id] = setTimeout(function() {
+        autoSaveEdit(element);
+    }, 10000);
+}
+
+function updateTextStats(element) {
+    var text = element.innerText.trim();
+    var charCount = text.length;
+    var wordCount = text ? text.split(/\s+/).filter(function(w) { return w.length > 0; }).length : 0;
+    
+    var statsDiv = element.nextElementSibling;
+    if (statsDiv && statsDiv.classList.contains('text-stats')) {
+        var charSpan = statsDiv.querySelector('.char-count');
+        var wordSpan = statsDiv.querySelector('.word-count');
+        if (charSpan) charSpan.textContent = charCount + ' karakter';
+        if (wordSpan) wordSpan.textContent = wordCount + ' kelime';
+    }
+}
+
+function undoEdit(button) {
+    var buttonsDiv = button.parentElement;
+    var statsDiv = buttonsDiv.previousElementSibling;
+    var editableDiv = statsDiv && statsDiv.classList.contains('text-stats') ? statsDiv.previousElementSibling : buttonsDiv.previousElementSibling;
+    var id = getElementId(editableDiv);
+    var hist = editHistory[id];
+    
+    if (hist && hist.position > 0) {
+        hist.position--;
+        editableDiv.innerText = hist.history[hist.position];
+        
+        // Update text stats
+        updateTextStats(editableDiv);
+        
+        // Update button visibility
+        var redoBtn = buttonsDiv.querySelector('.redo-btn');
+        if (redoBtn) redoBtn.classList.add('visible');
+        
+        if (hist.position === 0) {
+            button.classList.remove('visible');
+            editableDiv.classList.remove('modified');
+            var saveBtn = buttonsDiv.querySelector('.save-edit-btn');
+            if (saveBtn) saveBtn.classList.remove('visible');
+        }
+    }
+}
+
+function redoEdit(button) {
+    var buttonsDiv = button.parentElement;
+    var statsDiv = buttonsDiv.previousElementSibling;
+    var editableDiv = statsDiv && statsDiv.classList.contains('text-stats') ? statsDiv.previousElementSibling : buttonsDiv.previousElementSibling;
+    var id = getElementId(editableDiv);
+    var hist = editHistory[id];
+    
+    if (hist && hist.position < hist.history.length - 1) {
+        hist.position++;
+        editableDiv.innerText = hist.history[hist.position];
+        
+        // Update text stats
+        updateTextStats(editableDiv);
+        
+        // Update button visibility
+        var undoBtn = buttonsDiv.querySelector('.undo-btn');
+        if (undoBtn) undoBtn.classList.add('visible');
+        
+        editableDiv.classList.add('modified');
+        var saveBtn = buttonsDiv.querySelector('.save-edit-btn');
+        if (saveBtn) saveBtn.classList.add('visible');
+        
+        if (hist.position === hist.history.length - 1) {
+            button.classList.remove('visible');
+        }
+    }
+}
+
+function checkModified(element) {
+    var original = element.dataset.original;
+    var current = element.innerText.trim();
+    if (original === current) {
+        element.classList.remove('modified');
+        var statsDiv = element.nextElementSibling;
+        var buttonsDiv = statsDiv && statsDiv.classList.contains('text-stats') ? statsDiv.nextElementSibling : element.nextElementSibling;
+        if (buttonsDiv && buttonsDiv.classList.contains('edit-buttons')) {
+            var saveBtn = buttonsDiv.querySelector('.save-edit-btn');
+            var undoBtn = buttonsDiv.querySelector('.undo-btn');
+            var redoBtn = buttonsDiv.querySelector('.redo-btn');
+            if (saveBtn) saveBtn.classList.remove('visible');
+            if (undoBtn) undoBtn.classList.remove('visible');
+            if (redoBtn) redoBtn.classList.remove('visible');
+        }
+    }
+}
+
+function autoSaveEdit(element) {
+    var link = element.dataset.link;
+    var field = element.dataset.field;
+    var newValue = element.innerText.trim();
+    var original = element.dataset.original;
+    
+    if (newValue === original) return;  // No changes
+    
+    var statsDiv = element.nextElementSibling;
+    var buttonsDiv = statsDiv && statsDiv.classList.contains('text-stats') ? statsDiv.nextElementSibling : element.nextElementSibling;
+    var indicator = buttonsDiv ? buttonsDiv.querySelector('.autosave-indicator') : null;
+    
+    if (indicator) {
+        indicator.classList.add('visible', 'saving');
+        indicator.textContent = 'otomatik kaydediliyor...';
+    }
+    
+    fetch('/haberler/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ link: link, field: field, value: newValue })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            element.classList.remove('modified');
+            element.dataset.original = newValue;
+            
+            if (indicator) {
+                indicator.classList.remove('saving');
+                indicator.classList.add('saved');
+                indicator.textContent = '✓ kaydedildi';
+                setTimeout(function() {
+                    indicator.classList.remove('visible', 'saved');
+                }, 2000);
+            }
+            
+            // Hide buttons
+            if (buttonsDiv) {
+                var saveBtn = buttonsDiv.querySelector('.save-edit-btn');
+                var undoBtn = buttonsDiv.querySelector('.undo-btn');
+                var redoBtn = buttonsDiv.querySelector('.redo-btn');
+                if (saveBtn) saveBtn.classList.remove('visible');
+                if (undoBtn) undoBtn.classList.remove('visible');
+                if (redoBtn) redoBtn.classList.remove('visible');
+            }
+            
+            // Reset history
+            var id = getElementId(element);
+            editHistory[id] = { history: [newValue], position: 0 };
+        } else {
+            if (indicator) {
+                indicator.textContent = '✗ hata';
+                indicator.classList.remove('saving');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (indicator) {
+            indicator.textContent = '✗ hata';
+            indicator.classList.remove('saving');
+        }
+    });
+}
+
+function saveEdit(button, link, field) {
+    var buttonsDiv = button.parentElement;
+    var statsDiv = buttonsDiv.previousElementSibling;
+    var editableDiv = statsDiv && statsDiv.classList.contains('text-stats') ? statsDiv.previousElementSibling : buttonsDiv.previousElementSibling;
+    var newValue = editableDiv.innerText.trim();
+    
+    // Clear autosave timer
+    var id = getElementId(editableDiv);
+    if (autosaveTimers[id]) {
+        clearTimeout(autosaveTimers[id]);
+    }
+    
+    fetch('/haberler/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ link: link, field: field, value: newValue })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            editableDiv.classList.remove('modified');
+            editableDiv.dataset.original = newValue;
+            
+            // Hide all buttons
+            var saveBtn = buttonsDiv.querySelector('.save-edit-btn');
+            var undoBtn = buttonsDiv.querySelector('.undo-btn');
+            var redoBtn = buttonsDiv.querySelector('.redo-btn');
+            if (saveBtn) saveBtn.classList.remove('visible');
+            if (undoBtn) undoBtn.classList.remove('visible');
+            if (redoBtn) redoBtn.classList.remove('visible');
+            
+            // Reset history
+            editHistory[id] = { history: [newValue], position: 0 };
+            
+            alert('Değişiklik kaydedildi!');
+        } else {
+            alert('Hata: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Kaydetme sırasında hata oluştu');
+    });
+}
+
+// --- GÖNDERİM ÖNCESİ ÖN İZLEME ---
+function openPreview(link) {
+    // Open the preview page in a new tab
+    var previewUrl = '/onizleme?link=' + encodeURIComponent(link);
+    window.open(previewUrl, '_blank');
+}
+
+// --- INITIALIZE ON PAGE LOAD ---
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded - initializing features...');
+    
+    // Initialize sent filter from cookie
+    var checkbox = document.getElementById('hide-sent-toggle');
+    if (checkbox) {
+        var savedPref = getCookie('hide_sent_news');
+        // Default: unchecked (show all). Only check if cookie explicitly says 'true'
+        checkbox.checked = savedPref === 'true';
+        // Apply initial state
+        toggleSentFilter(checkbox);
+    }
+    
+    // Initialize text stats for all editable fields
+    document.querySelectorAll('.editable-content').forEach(function(element) {
+        // Initialize history for undo/redo
+        initHistory(element);
+        // Update text stats (word count, character count)
+        updateTextStats(element);
+    });
+    
+    console.log('Initialization complete!');
+});
+
+// Also run on window load as backup
+window.addEventListener('load', function() {
+    console.log('Window fully loaded - double-checking initialization...');
+    
+    // Re-initialize text stats if any are missing
+    document.querySelectorAll('.editable-content').forEach(function(element) {
+        var statsDiv = element.nextElementSibling;
+        if (statsDiv && statsDiv.classList.contains('text-stats')) {
+            var charSpan = statsDiv.querySelector('.char-count');
+            // Only update if it hasn't been initialized
+            if (charSpan && charSpan.textContent === '0 karakter') {
+                updateTextStats(element);
+            }
+        }
+    });
+});
+    </script>
+{% endblock %}

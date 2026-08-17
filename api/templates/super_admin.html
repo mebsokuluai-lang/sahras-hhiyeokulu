@@ -1,0 +1,648 @@
+{% extends "base.html" %}
+
+{% block title %}Süper Admin - Teknoloji Haberleri{% endblock %}
+
+{% block extra_css %}
+<style>
+    .super-admin-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #1a237e;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 0.95em;
+    }
+    
+    .admin-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .admin-section {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #6a1b9a 0%, #8e24aa 100%);
+        color: white;
+        padding: 20px;
+    }
+    
+    .section-header.green {
+        background: linear-gradient(135deg, #1b5e20 0%, #388e3c 100%);
+    }
+    
+    .section-header.blue {
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+    }
+    
+    .section-header h2 {
+        margin: 0;
+        font-size: 1.2em;
+    }
+    
+    .section-header p {
+        margin: 5px 0 0 0;
+        opacity: 0.8;
+        font-size: 0.85em;
+    }
+    
+    .section-body {
+        padding: 20px;
+    }
+    
+    .add-form {
+        background: #f5f5f5;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .add-form h3 {
+        margin: 0 0 15px 0;
+        font-size: 1em;
+        color: #333;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #1976d2;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .checkbox-label input {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .btn-add {
+        background: #6a1b9a;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    
+    .btn-add:hover {
+        background: #4a148c;
+    }
+    
+    .users-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .user-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .user-item:last-child {
+        border-bottom: none;
+    }
+    
+    .user-item:hover {
+        background: #f9f9f9;
+    }
+    
+    .user-info h4 {
+        margin: 0 0 5px 0;
+        color: #333;
+    }
+    
+    .user-permissions {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+    
+    .permission-badge {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.75em;
+        font-weight: 500;
+    }
+    
+    .permission-user {
+        background: #e3f2fd;
+        color: #1565c0;
+    }
+    
+    .permission-admin {
+        background: #fff3e0;
+        color: #e65100;
+    }
+    
+    .permission-super_admin {
+        background: #f3e5f5;
+        color: #6a1b9a;
+    }
+    
+    .btn-delete {
+        background: #d32f2f;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85em;
+    }
+    
+    .btn-delete:hover {
+        background: #c62828;
+    }
+    
+    /* Stats Details */
+    .stats-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    
+    @media (max-width: 800px) {
+        .stats-detail-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .detail-list {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-name {
+        color: #333;
+    }
+    
+    .detail-count {
+        font-weight: 600;
+        color: #1976d2;
+    }
+    
+    /* Visit History */
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9em;
+    }
+    
+    .history-table th,
+    .history-table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .history-table th {
+        background: #f5f5f5;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+    }
+    
+    .history-table tr:hover {
+        background: #f9f9f9;
+    }
+    
+    .action-badge {
+        padding: 3px 8px;
+        border-radius: 10px;
+        font-size: 0.8em;
+    }
+    
+    .action-login {
+        background: #c8e6c9;
+        color: #2e7d32;
+    }
+    
+    .action-logout {
+        background: #ffecb3;
+        color: #ff6f00;
+    }
+    
+    .action-view {
+        background: #e3f2fd;
+        color: #1565c0;
+    }
+    
+    .action-default {
+        background: #f5f5f5;
+        color: #666;
+    }
+    
+    .history-scroll {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .count-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 3px 10px;
+        border-radius: 15px;
+        font-size: 0.85em;
+        margin-left: 10px;
+    }
+    
+    .password-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    .password-wrapper input {
+        flex: 1;
+        padding-right: 45px !important;
+    }
+    
+    .toggle-password {
+        position: absolute;
+        right: 10px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.1em;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    }
+    
+    .toggle-password:hover {
+        opacity: 1;
+    }
+    
+    .toggle-password.visible {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="super-admin-container">
+    <h1 style="margin-bottom: 30px;">👑 Süper Admin Paneli</h1>
+    
+    <!-- Statistics Overview -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_news or 0 }}</div>
+            <div class="stat-label">Toplam Haber</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.processed_news or 0 }}</div>
+            <div class="stat-label">İşlenmiş Haber</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.preferred_news or 0 }}</div>
+            <div class="stat-label">Tercih Edilen Haber</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.sent_news or 0 }}</div>
+            <div class="stat-label">Gönderilmiş Haber</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ users|length }}</div>
+            <div class="stat-label">Kayıtlı Kullanıcı</div>
+        </div>
+    </div>
+    
+    <div class="admin-grid">
+        <!-- User Management -->
+        <div class="admin-section">
+            <div class="section-header">
+                <h2>👥 Kullanıcı Yönetimi <span class="count-badge">{{ users|length }}</span></h2>
+                <p>Yeni kullanıcı oluştur veya mevcut kullanıcıları yönet</p>
+            </div>
+            <div class="section-body">
+                <div class="add-form">
+                    <h3>➕ Yeni Kullanıcı Oluştur</h3>
+                    <form method="POST" action="{{ url_for('manage_users') }}">
+                        <input type="hidden" name="action" value="create">
+                        
+                        <div class="form-group">
+                            <label for="username">Kullanıcı Adı</label>
+                            <input type="text" id="username" name="username" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password">Şifre (en az 6 karakter)</label>
+                            <div class="password-wrapper">
+                                <input type="password" id="password" name="password" required minlength="6">
+                                <button type="button" class="toggle-password" onclick="togglePassword('password', this)">👁️</button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="user_type">Kullanıcı Tipi</label>
+                            <select id="user_type" name="user_type">
+                                <option value="standard">Standart</option>
+                                <option value="viewer">Görüntüleyici</option>
+                                <option value="editor">Editör</option>
+                                <option value="analyst">Analist</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>İzinler</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="permissions" value="user" checked disabled>
+                                    <span>User (varsayılan)</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="permissions" value="admin">
+                                    <span>Admin</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="permissions" value="super_admin">
+                                    <span>Super Admin</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Starting Filter Tags -->
+                        {% if all_tags %}
+                        <div class="form-group">
+                            <label>Başlangıç Filtre Etiketleri</label>
+                            <div class="checkbox-group" style="max-height: 150px; overflow-y: auto; background: #fff; padding: 10px; border-radius: 5px;">
+                                {% for tag in all_tags %}
+                                <label class="checkbox-label" style="margin-bottom: 5px;">
+                                    <input type="checkbox" name="selected_tags" value="{{ tag.tag }}">
+                                    <span>{{ tag.tag }} {% if tag.preferred %}✓{% else %}✗{% endif %}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Add New Tag -->
+                        <div class="form-group" style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
+                            <label>Yeni Filtre Etiketi Ekle (opsiyonel)</label>
+                            <input type="text" name="new_tag" placeholder="Yeni etiket">
+                            <label class="checkbox-label" style="margin-top: 5px;">
+                                <input type="checkbox" name="new_tag_preferred">
+                                <span>Tercih edilen</span>
+                            </label>
+                        </div>
+                        
+                        <!-- Starting Translate Keywords -->
+                        {% if all_translate %}
+                        <div class="form-group">
+                            <label>Başlangıç Çeviri Kelimeleri</label>
+                            <div class="checkbox-group" style="max-height: 150px; overflow-y: auto; background: #fff; padding: 10px; border-radius: 5px;">
+                                {% for tk in all_translate %}
+                                <label class="checkbox-label" style="margin-bottom: 5px;">
+                                    <input type="checkbox" name="selected_translate" value="{{ tk.english }}">
+                                    <span>{{ tk.english }} → {{ tk.turkish }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Add New Translate -->
+                        <div class="form-group" style="background: #e3f2fd; padding: 10px; border-radius: 5px;">
+                            <label>Yeni Çeviri Kelimesi Ekle (opsiyonel)</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" name="new_translate_en" placeholder="İngilizce" style="flex: 1;">
+                                <input type="text" name="new_translate_tr" placeholder="Türkçe" style="flex: 1;">
+                            </div>
+                        </div>
+                        
+                        <!-- Starting Ornek Haberler -->
+                        {% if all_ornek %}
+                        <div class="form-group">
+                            <label>Başlangıç Örnek Haberleri</label>
+                            <div class="checkbox-group" style="max-height: 150px; overflow-y: auto; background: #fff; padding: 10px; border-radius: 5px;">
+                                {% for ornek in all_ornek %}
+                                <label class="checkbox-label" style="margin-bottom: 5px;">
+                                    <input type="checkbox" name="selected_ornek" value="{{ ornek.title }}">
+                                    <span>{{ ornek.title[:40] }}... {% if ornek.preferred %}✓{% else %}✗{% endif %}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Add New Ornek -->
+                        <div class="form-group" style="background: #fff3e0; padding: 10px; border-radius: 5px;">
+                            <label>Yeni Örnek Haber Ekle (opsiyonel)</label>
+                            <input type="text" name="new_ornek_title" placeholder="Haber başlığı" style="margin-bottom: 5px;">
+                            <textarea name="new_ornek_content" placeholder="İçerik (opsiyonel)" style="width: 100%; min-height: 50px; padding: 8px; border: 1px solid #ddd; border-radius: 5px;"></textarea>
+                            <label class="checkbox-label" style="margin-top: 5px;">
+                                <input type="checkbox" name="new_ornek_preferred">
+                                <span>Tercih edilen</span>
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn-add" style="margin-top: 15px;">Kullanıcı Oluştur</button>
+                    </form>
+                </div>
+                
+                <div class="users-list">
+                    {% for user in users %}
+                    <div class="user-item">
+                        <div class="user-info">
+                            <h4>{{ user.username }}</h4>
+                            <div class="user-permissions">
+                                {% for perm in user.permissions %}
+                                <span class="permission-badge permission-{{ perm }}">{{ perm }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% if user.username != current_user.username %}
+                        <form method="POST" action="{{ url_for('manage_users') }}">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="username" value="{{ user.username }}">
+                            <button type="submit" class="btn-delete" onclick="return confirm('{{ user.username }} kullanıcısını silmek istediğinizden emin misiniz?')">Sil</button>
+                        </form>
+                        {% else %}
+                        <span style="color: #999; font-size: 0.85em;">Aktif kullanıcı</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Category & Source Stats -->
+        <div class="admin-section">
+            <div class="section-header green">
+                <h2>📊 İstatistikler</h2>
+                <p>Kategori ve kaynak bazlı haber dağılımı</p>
+            </div>
+            <div class="section-body">
+                <div class="stats-detail-grid">
+                    <div>
+                        <h4 style="margin-bottom: 10px;">Kategoriler</h4>
+                        <div class="detail-list">
+                            {% if stats.kategoriler %}
+                                {% for kat in stats.kategoriler %}
+                                <div class="detail-item">
+                                    <span class="detail-name">{{ kat._id or 'Belirsiz' }}</span>
+                                    <span class="detail-count">{{ kat.count }}</span>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p style="color: #999; text-align: center;">Veri yok</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 style="margin-bottom: 10px;">Kaynaklar</h4>
+                        <div class="detail-list">
+                            {% if stats.sources %}
+                                {% for src in stats.sources %}
+                                <div class="detail-item">
+                                    <span class="detail-name">{{ src._id or 'Belirsiz' }}</span>
+                                    <span class="detail-count">{{ src.count }}</span>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p style="color: #999; text-align: center;">Veri yok</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Visit History - Full Width -->
+    <div class="admin-section">
+        <div class="section-header blue">
+            <h2>📜 Ziyaret Geçmişi <span class="count-badge">Son {{ visit_history|length }} kayıt</span></h2>
+            <p>Kullanıcı aktiviteleri ve sistem logları</p>
+        </div>
+        <div class="section-body">
+            <div class="history-scroll">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Tarih/Saat</th>
+                            <th>Kullanıcı</th>
+                            <th>İşlem</th>
+                            <th>IP Adresi</th>
+                            <th>Sayfa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if visit_history %}
+                            {% for visit in visit_history %}
+                            <tr>
+                                <td>{{ visit.datetime.strftime('%Y-%m-%d %H:%M:%S') if visit.datetime else 'N/A' }}</td>
+                                <td>{{ visit.username or 'anonymous' }}</td>
+                                <td>
+                                    <span class="action-badge 
+                                        {% if visit.action == 'login' %}action-login
+                                        {% elif visit.action == 'logout' %}action-logout
+                                        {% elif 'view' in visit.action %}action-view
+                                        {% else %}action-default{% endif %}">
+                                        {{ visit.action }}
+                                    </span>
+                                </td>
+                                <td>{{ visit.ip_address or 'N/A' }}</td>
+                                <td>{{ visit.path or 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #999;">Henüz ziyaret kaydı yok</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword(inputId, button) {
+    var input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.textContent = '🙈';
+        button.classList.add('visible');
+    } else {
+        input.type = 'password';
+        button.textContent = '👁️';
+        button.classList.remove('visible');
+    }
+}
+</script>
+{% endblock %}
+

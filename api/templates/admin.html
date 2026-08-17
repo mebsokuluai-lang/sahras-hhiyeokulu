@@ -1,0 +1,701 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Teknoloji Haberleri{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .admin-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 25px;
+    }
+    
+    .admin-section {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        color: white;
+        padding: 20px;
+    }
+    
+    .section-header h2 {
+        margin: 0;
+        font-size: 1.2em;
+    }
+    
+    .section-header p {
+        margin: 5px 0 0 0;
+        opacity: 0.8;
+        font-size: 0.85em;
+    }
+    
+    .section-body {
+        padding: 20px;
+    }
+    
+    .add-form {
+        background: #f5f5f5;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .add-form h3 {
+        margin: 0 0 15px 0;
+        font-size: 1em;
+        color: #333;
+    }
+    
+    .form-row-inline {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .form-row-inline input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    .form-row-inline input:focus {
+        outline: none;
+        border-color: #1976d2;
+    }
+    
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .checkbox-label input {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .btn-add {
+        background: #388e3c;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    
+    .btn-add:hover {
+        background: #2e7d32;
+    }
+    
+    .items-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .item:last-child {
+        border-bottom: none;
+    }
+    
+    .item:hover {
+        background: #f9f9f9;
+    }
+    
+    .item-content {
+        flex: 1;
+    }
+    
+    .item-tag {
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .item-meta {
+        font-size: 0.85em;
+        color: #666;
+        margin-top: 3px;
+    }
+    
+    .preferred-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75em;
+        margin-left: 8px;
+    }
+    
+    .preferred-true {
+        background: #c8e6c9;
+        color: #2e7d32;
+    }
+    
+    .preferred-false {
+        background: #ffcdd2;
+        color: #c62828;
+    }
+    
+    .btn-delete {
+        background: #d32f2f;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85em;
+    }
+    
+    .btn-delete:hover {
+        background: #c62828;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 30px;
+        color: #999;
+    }
+    
+    .textarea-field {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        min-height: 80px;
+        resize: vertical;
+        margin-bottom: 10px;
+    }
+    
+    .textarea-field:focus {
+        outline: none;
+        border-color: #1976d2;
+    }
+    
+    .ornek-item {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        border-left: 4px solid #1976d2;
+    }
+    
+    .ornek-item.preferred {
+        border-left-color: #388e3c;
+    }
+    
+    .ornek-item.not-preferred {
+        border-left-color: #d32f2f;
+    }
+    
+    .ornek-title {
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    
+    .ornek-content {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .count-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 3px 10px;
+        border-radius: 15px;
+        font-size: 0.85em;
+        margin-left: 10px;
+    }
+    
+    /* ============================================
+       RESPONSIVE STYLES - Mobile
+       ============================================ */
+    
+    @media (max-width: 992px) {
+        .admin-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .admin-container h1 {
+            font-size: 1.4em;
+            margin-bottom: 20px !important;
+        }
+        
+        .section-header {
+            padding: 15px;
+        }
+        
+        .section-header h2 {
+            font-size: 1em;
+        }
+        
+        .section-body {
+            padding: 15px;
+        }
+        
+        .add-form {
+            padding: 15px;
+        }
+        
+        .form-row-inline {
+            flex-direction: column;
+        }
+        
+        .form-row-inline input {
+            font-size: 16px; /* Prevents iOS zoom */
+        }
+        
+        .item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .item-content {
+            width: 100%;
+        }
+        
+        .item > div:last-child {
+            width: 100%;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .item > div:last-child form {
+            flex: 1;
+        }
+        
+        .item > div:last-child button {
+            width: 100%;
+        }
+        
+        .btn-add,
+        .btn-delete {
+            padding: 12px 20px;
+        }
+        
+        .textarea-field {
+            font-size: 16px; /* Prevents iOS zoom */
+        }
+        
+        .ornek-item .flex-between {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .ornek-item .flex-between form {
+            width: 100%;
+        }
+        
+        .ornek-item .flex-between form button {
+            width: 100%;
+        }
+        
+        .preferred-badge {
+            display: block;
+            margin-left: 0;
+            margin-top: 5px;
+        }
+        
+        .count-badge {
+            display: inline-block;
+            margin-left: 5px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .admin-container h1 {
+            font-size: 1.2em;
+        }
+        
+        .section-header h2 {
+            font-size: 0.95em;
+        }
+        
+        .add-form h3 {
+            font-size: 0.9em;
+        }
+        
+        .item-tag {
+            font-size: 0.9em;
+        }
+        
+        .btn-add,
+        .btn-delete {
+            font-size: 0.85em;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1 style="margin-bottom: 30px;">🔧 Admin Panel</h1>
+    
+    <div class="admin-grid">
+        <!-- Filter Keywords -->
+        <div class="admin-section">
+            <div class="section-header">
+                <h2>🏷️ Filtre Anahtar Kelimeleri <span class="count-badge">{{ keywords|length }}</span></h2>
+                <p>Haber filtreleme için kullanılan anahtar kelimeler</p>
+            </div>
+            <div class="section-body">
+                <div class="add-form">
+                    <h3>➕ Yeni Anahtar Kelime Ekle</h3>
+                    <form method="POST" action="{{ url_for('manage_keywords') }}">
+                        <input type="hidden" name="action" value="add">
+                        <div class="form-row-inline">
+                            <input type="text" name="tag" placeholder="Anahtar kelime" required>
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="preferred">
+                            <span>Tercih edilen (preferred) olarak işaretle</span>
+                        </label>
+                        <button type="submit" class="btn-add">Ekle</button>
+                    </form>
+                </div>
+                
+                <div class="items-list">
+                    {% if keywords %}
+                        {% for kw in keywords %}
+                        <div class="item">
+                            <div class="item-content">
+                                <span class="item-tag">{{ kw.tag }}</span>
+                                <span class="preferred-badge {% if kw.preferred %}preferred-true{% else %}preferred-false{% endif %}">
+                                    {% if kw.preferred %}✓ Tercih edilen{% else %}✗ Tercih edilmeyen{% endif %}
+                                </span>
+                                {% if kw.owner %}
+                                <span class="item-meta" style="margin-left: 10px; font-size: 0.8em; color: #888;">by {{ kw.owner }}</span>
+                                {% endif %}
+                            </div>
+                            <form method="POST" action="{{ url_for('manage_keywords') }}" style="display:inline;">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="tag" value="{{ kw.tag }}">
+                                <button type="submit" class="btn-delete" onclick="return confirm('Bu anahtar kelimeyi silmek istediğinizden emin misiniz?')">Sil</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">Henüz anahtar kelime eklenmemiş</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Translation Keywords -->
+        <div class="admin-section">
+            <div class="section-header">
+                <h2>🌐 Çeviri Anahtar Kelimeleri <span class="count-badge">{{ translate_keywords|length }}</span></h2>
+                <p>İngilizce-Türkçe çeviri eşleştirmeleri</p>
+            </div>
+            <div class="section-body">
+                <div class="add-form">
+                    <h3>➕ Yeni Çeviri Çifti Ekle</h3>
+                    <form method="POST" action="{{ url_for('manage_translate_keywords') }}">
+                        <input type="hidden" name="action" value="add">
+                        <div class="form-row-inline">
+                            <input type="text" name="english" placeholder="İngilizce" required>
+                            <input type="text" name="turkish" placeholder="Türkçe" required>
+                        </div>
+                        <button type="submit" class="btn-add">Ekle</button>
+                    </form>
+                </div>
+                
+                <div class="items-list">
+                    {% if translate_keywords %}
+                        {% for tk in translate_keywords %}
+                        <div class="item">
+                            <div class="item-content">
+                                {% set eng_val = tk.get('english', '') or tk.get('en', '') or tk.get('source', '') or tk.get('keyword_english', '') %}
+                                {% set tr_val = tk.get('turkish', '') or tk.get('tr', '') or tk.get('target', '') or tk.get('keyword_turkish', '') %}
+                                {% if eng_val or tr_val %}
+                                <span class="item-tag">{{ eng_val or 'N/A' }}</span>
+                                <span style="color: #999; margin: 0 8px;">→</span>
+                                <span class="item-tag">{{ tr_val or 'N/A' }}</span>
+                                {% else %}
+                                <span class="item-tag" style="color: #999;">{{ tk.keys()|list|join(', ') }}</span>
+                                {% endif %}
+                                {% if tk.owner %}
+                                <span class="item-meta" style="margin-left: 10px; font-size: 0.8em; color: #888;">by {{ tk.owner }}</span>
+                                {% endif %}
+                            </div>
+                            <form method="POST" action="{{ url_for('manage_translate_keywords') }}" style="display:inline;">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="english" value="{{ eng_val }}">
+                                <button type="submit" class="btn-delete" onclick="return confirm('Bu çeviri çiftini silmek istediğinizden emin misiniz?')">Sil</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">Henüz çeviri çifti eklenmemiş</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Example News - Full Width -->
+    <div class="admin-section" style="margin-top: 25px;">
+        <div class="section-header">
+            <h2>📰 Örnek Haberler <span class="count-badge">{{ ornek_haberler|length }}</span></h2>
+            <p>AI'ın öğrenmesi için kullanılan örnek haberler</p>
+        </div>
+        <div class="section-body">
+            <div class="add-form">
+                <h3>➕ Yeni Örnek Haber Ekle</h3>
+                <form method="POST" action="{{ url_for('manage_ornek_haberler') }}">
+                    <input type="hidden" name="action" value="add">
+                    <div class="form-row-inline">
+                        <input type="text" name="title" placeholder="Haber başlığı" required style="flex: 2;">
+                    </div>
+                    <textarea name="content" class="textarea-field" placeholder="Haber içeriği (opsiyonel)"></textarea>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="preferred">
+                        <span>Tercih edilen (preferred) örnek olarak işaretle</span>
+                    </label>
+                    <button type="submit" class="btn-add">Ekle</button>
+                </form>
+            </div>
+            
+            <div class="items-list" style="max-height: 400px;">
+                {% if ornek_haberler %}
+                    {% for ornek in ornek_haberler %}
+                    <div class="ornek-item {% if ornek.preferred %}preferred{% else %}not-preferred{% endif %}">
+                        <div class="flex-between">
+                            <div>
+                                <div class="ornek-title">
+                                    {{ ornek.title[:100] }}{% if ornek.title|length > 100 %}...{% endif %}
+                                    <span class="preferred-badge {% if ornek.preferred %}preferred-true{% else %}preferred-false{% endif %}">
+                                        {% if ornek.preferred %}✓ Tercih edilen{% else %}✗ Tercih edilmeyen{% endif %}
+                                    </span>
+                                    {% if ornek.owner %}
+                                    <span style="font-size: 0.75em; color: #888; margin-left: 10px;">by {{ ornek.owner }}</span>
+                                    {% endif %}
+                                </div>
+                                {% if ornek.content %}
+                                <div class="ornek-content">{{ ornek.content[:200] }}{% if ornek.content|length > 200 %}...{% endif %}</div>
+                                {% endif %}
+                            </div>
+                            <form method="POST" action="{{ url_for('manage_ornek_haberler') }}">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="title" value="{{ ornek.title }}">
+                                <button type="submit" class="btn-delete" onclick="return confirm('Bu örnek haberi silmek istediğinizden emin misiniz?')">Sil</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">Henüz örnek haber eklenmemiş</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- RSS Sources - Full Width -->
+    <div class="admin-section" style="margin-top: 25px;">
+        <div class="section-header" style="background: linear-gradient(135deg, #e65100 0%, #ff9800 100%);">
+            <h2>📡 RSS Kaynakları <span class="count-badge">{{ rss_sources|length }}</span></h2>
+            <p>Haber çekilen RSS feed kaynakları</p>
+        </div>
+        <div class="section-body">
+            <div class="add-form">
+                <h3>➕ Yeni RSS Kaynağı Ekle</h3>
+                <form method="POST" action="{{ url_for('manage_rss_sources') }}">
+                    <input type="hidden" name="action" value="add">
+                    <div class="form-row-inline">
+                        <input type="text" name="name" placeholder="Kaynak Adı (örn: Reuters)" required>
+                        <input type="url" name="url" placeholder="RSS Feed URL" required style="flex: 2;">
+                    </div>
+                    <button type="submit" class="btn-add" style="background: #e65100;">Ekle</button>
+                </form>
+            </div>
+            
+            <div class="items-list" style="max-height: 400px;">
+                {% if rss_sources %}
+                    {% for source in rss_sources %}
+                    <div class="item" style="{% if not source.active %}opacity: 0.5;{% endif %}">
+                        <div class="item-content">
+                            <span class="item-tag">{{ source.name }}</span>
+                            <span class="preferred-badge {% if source.active %}preferred-true{% else %}preferred-false{% endif %}">
+                                {% if source.active %}✓ Aktif{% else %}✗ Pasif{% endif %}
+                            </span>
+                            {% if source.is_owner %}
+                            <span class="preferred-badge preferred-true" style="margin-left: 5px;">Sahip</span>
+                            {% endif %}
+                            {% if source.owner %}
+                            <span class="item-meta" style="margin-left: 10px; font-size: 0.8em; color: #888;">by {{ source.owner }}</span>
+                            {% endif %}
+                            <div style="font-size: 0.8em; color: #666; margin-top: 5px;">{{ source.url[:60] }}{% if source.url|length > 60 %}...{% endif %}</div>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <form method="POST" action="{{ url_for('manage_rss_sources') }}" style="display:inline;">
+                                <input type="hidden" name="action" value="toggle">
+                                <input type="hidden" name="url" value="{{ source.url }}">
+                                <button type="submit" class="btn-add" style="background: {% if source.active %}#ff9800{% else %}#4caf50{% endif %}; padding: 5px 10px; font-size: 0.8em;">
+                                    {% if source.active %}Pasif Yap{% else %}Aktif Yap{% endif %}
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('manage_rss_sources') }}" style="display:inline;">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="url" value="{{ source.url }}">
+                                <button type="submit" class="btn-delete" onclick="return confirm('Bu RSS kaynağını silmek istediğinizden emin misiniz?')">Sil</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">Henüz RSS kaynağı eklenmemiş</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- API Keys - Gemini and ElevenLabs -->
+    <div class="admin-grid" style="margin-top: 25px;">
+        <!-- Gemini API Keys -->
+        <div class="admin-section">
+            <div class="section-header" style="background: linear-gradient(135deg, #1565c0 0%, #42a5f5 100%);">
+                <h2>🤖 Gemini API Anahtarları <span class="count-badge">{{ gemini_keys|length }}</span></h2>
+                <p>Haber işleme için Gemini AI anahtarları (DB: {{ db_name }})</p>
+            </div>
+            <div class="section-body">
+                <div class="add-form">
+                    <h3>➕ Yeni Gemini API Anahtarı Ekle</h3>
+                    <form method="POST" action="{{ url_for('manage_api_keys') }}">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="key_type" value="gemini">
+                        <div class="form-row-inline">
+                            <input type="text" name="key_name" placeholder="Anahtar Adı (örn: Gemini Key 1)" required>
+                        </div>
+                        <div class="form-row-inline">
+                            <input type="text" name="api_key" placeholder="AIza..." required style="font-family: monospace;">
+                        </div>
+                        <button type="submit" class="btn-add" style="background: #1565c0;">Ekle</button>
+                    </form>
+                </div>
+                
+                <div class="items-list">
+                    {% if gemini_keys %}
+                        {% for key in gemini_keys %}
+                        <div class="item" style="{% if not key.active %}opacity: 0.5;{% endif %}">
+                            <div class="item-content">
+                                <span class="item-tag">{{ key.name }}</span>
+                                <span class="preferred-badge {% if key.active %}preferred-true{% else %}preferred-false{% endif %}">
+                                    {% if key.active %}✓ Aktif{% else %}✗ Pasif{% endif %}
+                                </span>
+                                {% if key.created_by %}
+                                <span class="item-meta" style="margin-left: 10px; font-size: 0.8em; color: #888;">by {{ key.created_by }}</span>
+                                {% endif %}
+                                <div style="font-size: 0.75em; color: #666; margin-top: 3px; font-family: monospace;">
+                                    {{ key.api_key[:15] }}...{{ key.api_key[-4:] }}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 5px;">
+                                <form method="POST" action="{{ url_for('manage_api_keys') }}" style="display:inline;">
+                                    <input type="hidden" name="action" value="toggle">
+                                    <input type="hidden" name="api_key" value="{{ key.api_key }}">
+                                    <button type="submit" class="btn-add" style="background: {% if key.active %}#ff9800{% else %}#4caf50{% endif %}; padding: 5px 10px; font-size: 0.8em;">
+                                        {% if key.active %}Pasif{% else %}Aktif{% endif %}
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('manage_api_keys') }}" style="display:inline;">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="api_key" value="{{ key.api_key }}">
+                                    <button type="submit" class="btn-delete" onclick="return confirm('Bu API anahtarını silmek istediğinizden emin misiniz?')">Sil</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">Henüz Gemini API anahtarı eklenmemiş</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- ElevenLabs API Keys -->
+        <div class="admin-section">
+            <div class="section-header" style="background: linear-gradient(135deg, #7b1fa2 0%, #9c27b0 100%);">
+                <h2>🔊 ElevenLabs API Anahtarları <span class="count-badge">{{ elevenlabs_keys|length }}</span></h2>
+                <p>Ses oluşturma için ElevenLabs anahtarları (DB: {{ db_name }})</p>
+            </div>
+            <div class="section-body">
+                <div class="add-form">
+                    <p style="margin-bottom: 15px; color: #666; font-size: 0.9em;">
+                        API anahtarınızı <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" style="color: #7b1fa2;">ElevenLabs hesabınızdan</a> alabilirsiniz.
+                    </p>
+                    <h3>➕ Yeni ElevenLabs API Anahtarı Ekle</h3>
+                    <form method="POST" action="{{ url_for('manage_api_keys') }}">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="key_type" value="elevenlabs">
+                        <div class="form-row-inline">
+                            <input type="text" name="key_name" placeholder="Anahtar Adı (örn: ElevenLabs Key 1)" required>
+                        </div>
+                        <div class="form-row-inline">
+                            <input type="text" name="api_key" placeholder="sk_..." required style="font-family: monospace;">
+                        </div>
+                        <button type="submit" class="btn-add" style="background: #7b1fa2;">Ekle</button>
+                    </form>
+                </div>
+                
+                <div class="items-list">
+                    {% if elevenlabs_keys %}
+                        {% for key in elevenlabs_keys %}
+                        <div class="item" style="{% if not key.active %}opacity: 0.5;{% endif %}">
+                            <div class="item-content">
+                                <span class="item-tag">{{ key.name }}</span>
+                                <span class="preferred-badge {% if key.active %}preferred-true{% else %}preferred-false{% endif %}">
+                                    {% if key.active %}✓ Aktif{% else %}✗ Pasif{% endif %}
+                                </span>
+                                {% if key.created_by %}
+                                <span class="item-meta" style="margin-left: 10px; font-size: 0.8em; color: #888;">by {{ key.created_by }}</span>
+                                {% endif %}
+                                <div style="font-size: 0.75em; color: #666; margin-top: 3px; font-family: monospace;">
+                                    {{ key.api_key[:10] }}...{{ key.api_key[-4:] }}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 5px;">
+                                <form method="POST" action="{{ url_for('manage_api_keys') }}" style="display:inline;">
+                                    <input type="hidden" name="action" value="toggle">
+                                    <input type="hidden" name="api_key" value="{{ key.api_key }}">
+                                    <button type="submit" class="btn-add" style="background: {% if key.active %}#ff9800{% else %}#4caf50{% endif %}; padding: 5px 10px; font-size: 0.8em;">
+                                        {% if key.active %}Pasif{% else %}Aktif{% endif %}
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('manage_api_keys') }}" style="display:inline;">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="api_key" value="{{ key.api_key }}">
+                                    <button type="submit" class="btn-delete" onclick="return confirm('Bu API anahtarını silmek istediğinizden emin misiniz?')">Sil</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">Henüz ElevenLabs API anahtarı eklenmemiş</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}Ayarlar - Teknoloji Haberleri{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .settings-section {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        color: white;
+        padding: 20px 25px;
+    }
+    
+    .section-header h2 {
+        margin: 0;
+        font-size: 1.3em;
+    }
+    
+    .section-header p {
+        margin: 5px 0 0 0;
+        opacity: 0.8;
+        font-size: 0.9em;
+    }
+    
+    .section-body {
+        padding: 25px;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    
+    @media (max-width: 600px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1em;
+        transition: border-color 0.3s ease;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #1976d2;
+    }
+    
+    .form-help {
+        font-size: 0.85em;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .btn-save {
+        background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(46, 125, 50, 0.4);
+    }
+    
+    .current-value {
+        background-color: #e3f2fd;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        color: #1565c0;
+        margin-left: 10px;
+    }
+    
+    .password-section {
+        border-top: 1px solid #e0e0e0;
+        padding-top: 25px;
+        margin-top: 25px;
+    }
+    
+    .password-section h3 {
+        margin-bottom: 20px;
+        color: #333;
+    }
+    
+    .info-box {
+        background-color: #e3f2fd;
+        border-left: 4px solid #1976d2;
+        padding: 15px 20px;
+        border-radius: 0 8px 8px 0;
+        margin-bottom: 20px;
+    }
+    
+    .info-box p {
+        margin: 0;
+        color: #1565c0;
+    }
+    
+    .password-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    .password-wrapper input {
+        flex: 1;
+        padding-right: 50px !important;
+    }
+    
+    .toggle-password {
+        position: absolute;
+        right: 10px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2em;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    }
+    
+    .toggle-password:hover {
+        opacity: 1;
+    }
+    
+    .toggle-password.visible {
+        opacity: 1;
+    }
+    
+    /* ============================================
+       RESPONSIVE STYLES - Mobile
+       ============================================ */
+    
+    @media (max-width: 768px) {
+        .settings-container {
+            padding: 0;
+        }
+        
+        .settings-container h1 {
+            font-size: 1.4em;
+            margin-bottom: 20px !important;
+        }
+        
+        .section-header {
+            padding: 15px 20px;
+        }
+        
+        .section-header h2 {
+            font-size: 1.1em;
+        }
+        
+        .section-body {
+            padding: 20px;
+        }
+        
+        .form-group input,
+        .form-group select {
+            font-size: 16px; /* Prevents iOS zoom */
+            padding: 14px 15px;
+        }
+        
+        .btn-save {
+            width: 100%;
+            padding: 14px 30px;
+        }
+        
+        .current-value {
+            display: block;
+            margin-left: 0;
+            margin-top: 5px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .settings-container h1 {
+            font-size: 1.2em;
+        }
+        
+        .section-header h2 {
+            font-size: 1em;
+        }
+        
+        .section-header p {
+            font-size: 0.85em;
+        }
+        
+        .form-group label {
+            font-size: 0.95em;
+        }
+        
+        .form-help {
+            font-size: 0.8em;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <h1 style="margin-bottom: 30px;">⚙️ Ayarlar</h1>
+    
+    <!-- Haber Görüntüleme Tercihleri -->
+    <div class="settings-section">
+        <div class="section-header">
+            <h2>📰 Haber Görüntüleme Tercihleri</h2>
+            <p>Haberlerin nasıl görüntüleneceğini ayarlayın</p>
+        </div>
+        <div class="section-body">
+            <form method="POST">
+                <input type="hidden" name="action" value="update_preferences">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="min_news_score">
+                            Minimum İlgi Puanı
+                            <span class="current-value">Mevcut: {{ current_min_score }}</span>
+                        </label>
+                        <select id="min_news_score" name="min_news_score">
+                            {% for i in range(1, 11) %}
+                            <option value="{{ i }}" {% if i|string == current_min_score %}selected{% endif %}>{{ i }} ve üzeri</option>
+                            {% endfor %}
+                        </select>
+                        <p class="form-help">Sadece bu puanın üzerindeki haberler gösterilir (1-10)</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="news_limit">
+                            Gösterilecek Haber Sayısı
+                            <span class="current-value">Mevcut: {{ current_news_limit }}</span>
+                        </label>
+                        <select id="news_limit" name="news_limit">
+                            <option value="25" {% if current_news_limit == '25' %}selected{% endif %}>25 haber</option>
+                            <option value="50" {% if current_news_limit == '50' %}selected{% endif %}>50 haber</option>
+                            <option value="100" {% if current_news_limit == '100' %}selected{% endif %}>100 haber</option>
+                            <option value="200" {% if current_news_limit == '200' %}selected{% endif %}>200 haber</option>
+                            <option value="500" {% if current_news_limit == '500' %}selected{% endif %}>500 haber</option>
+                        </select>
+                        <p class="form-help">Bir seferde gösterilecek maksimum haber sayısı</p>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-save">💾 Tercihleri Kaydet</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Şifre Değiştirme (Sadece giriş yapmış kullanıcılar için) -->
+    {% if is_logged_in %}
+    <div class="settings-section">
+        <div class="section-header">
+            <h2>🔐 Şifre Değiştir</h2>
+            <p>Hesap güvenliğiniz için şifrenizi güncelleyin</p>
+        </div>
+        <div class="section-body">
+            <form method="POST">
+                <input type="hidden" name="action" value="change_password">
+                
+                <div class="form-group">
+                    <label for="current_password">Mevcut Şifre</label>
+                    <div class="password-wrapper">
+                        <input type="password" 
+                               id="current_password" 
+                               name="current_password" 
+                               required 
+                               autocomplete="current-password">
+                        <button type="button" class="toggle-password" onclick="togglePassword('current_password', this)">👁️</button>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="new_password">Yeni Şifre</label>
+                        <div class="password-wrapper">
+                            <input type="password" 
+                                   id="new_password" 
+                                   name="new_password" 
+                                   required 
+                                   minlength="6"
+                                   autocomplete="new-password">
+                            <button type="button" class="toggle-password" onclick="togglePassword('new_password', this)">👁️</button>
+                        </div>
+                        <p class="form-help">En az 6 karakter olmalıdır</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirm_password">Yeni Şifre (Tekrar)</label>
+                        <div class="password-wrapper">
+                            <input type="password" 
+                                   id="confirm_password" 
+                                   name="confirm_password" 
+                                   required 
+                                   minlength="6"
+                                   autocomplete="new-password">
+                            <button type="button" class="toggle-password" onclick="togglePassword('confirm_password', this)">👁️</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-save">🔒 Şifreyi Değiştir</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="settings-section">
+        <div class="section-body">
+            <div class="info-box">
+                <p>🔐 Şifrenizi değiştirmek için <a href="{{ url_for('login') }}">giriş yapmalısınız</a>.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function togglePassword(inputId, button) {
+    var input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.textContent = '🙈';
+        button.classList.add('visible');
+    } else {
+        input.type = 'password';
+        button.textContent = '👁️';
+        button.classList.remove('visible');
+    }
+}
+</script>
+{% endblock %}
+

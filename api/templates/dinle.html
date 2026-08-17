@@ -1,0 +1,1000 @@
+{% extends "base.html" %}
+
+{% block title %}{{ (haber.title_turkish or haber.title_english or 'Haber')[:100] }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Loading Overlay */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        color: white;
+    }
+    
+    .spinner {
+        width: 60px;
+        height: 60px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #1976d2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .loading-overlay.hidden {
+        display: none;
+    }
+    
+    .loading-text {
+        font-size: 1.2em;
+        opacity: 0.9;
+    }
+    
+    /* Error State */
+    .error-state {
+        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+        border: 2px solid #ff9800;
+        border-radius: 15px;
+        padding: 40px;
+        text-align: center;
+        margin: 25px 0;
+    }
+    
+    .error-icon {
+        font-size: 4em;
+        margin-bottom: 15px;
+    }
+    
+    .error-state h2 {
+        color: #e65100;
+        margin-bottom: 10px;
+    }
+    
+    .error-state p {
+        color: #666;
+        margin-bottom: 25px;
+    }
+    
+    /* Main Container */
+    .dinle-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    /* Audio Player Panel */
+    .audio-player-panel {
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 25px;
+        color: white;
+        box-shadow: 0 10px 40px rgba(26, 35, 126, 0.3);
+    }
+    
+    .audio-player-panel.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    
+    .player-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .player-title {
+        font-size: 1.3em;
+        font-weight: 600;
+    }
+    
+    .player-controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .control-btn {
+        width: 55px;
+        height: 55px;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.4em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    
+    .play-btn {
+        background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+        color: white;
+    }
+    
+    .play-btn:hover:not(:disabled) {
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    }
+    
+    .pause-btn {
+        background: linear-gradient(135deg, #ff9800 0%, #ffc107 100%);
+        color: white;
+    }
+    
+    .pause-btn:hover:not(:disabled) {
+        box-shadow: 0 8px 25px rgba(255, 152, 0, 0.4);
+    }
+    
+    .stop-btn {
+        background: linear-gradient(135deg, #f44336 0%, #ef5350 100%);
+        color: white;
+    }
+    
+    .stop-btn:hover:not(:disabled) {
+        box-shadow: 0 8px 25px rgba(244, 67, 54, 0.4);
+    }
+    
+    .control-btn:hover:not(:disabled) {
+        transform: scale(1.1);
+    }
+    
+    .control-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    /* Progress Bar */
+    .progress-container {
+        margin-bottom: 15px;
+    }
+    
+    .progress-bar-wrapper {
+        height: 8px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 4px;
+        overflow: hidden;
+        cursor: pointer;
+    }
+    
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #4caf50, #8bc34a);
+        width: 0%;
+        transition: width 0.1s linear;
+    }
+    
+    .time-display {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9em;
+        margin-top: 8px;
+        opacity: 0.9;
+    }
+    
+    /* Volume and Speed */
+    .player-extras {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .volume-control, .speed-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .volume-slider {
+        width: 100px;
+        height: 6px;
+        -webkit-appearance: none;
+        background: rgba(255,255,255,0.3);
+        border-radius: 3px;
+        outline: none;
+    }
+    
+    .volume-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        background: white;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+    
+    .speed-select {
+        padding: 8px 15px;
+        border: none;
+        border-radius: 20px;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        font-size: 0.9em;
+        cursor: pointer;
+    }
+    
+    .speed-select option {
+        color: #333;
+    }
+    
+    .download-btn {
+        padding: 10px 20px;
+        border: 2px solid white;
+        background: transparent;
+        color: white;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 0.9em;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .download-btn:hover {
+        background: white;
+        color: #1a237e;
+    }
+    
+    /* Article Meta */
+    .article-meta {
+        display: flex;
+        gap: 25px;
+        flex-wrap: wrap;
+        padding: 15px 0;
+        border-bottom: 1px solid #e0e0e0;
+        margin-bottom: 20px;
+        color: #666;
+        font-size: 0.9em;
+    }
+    
+    .reading-time, .word-count, .source-info, .view-count {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .meta-icon {
+        font-size: 1.1em;
+    }
+    
+    /* Share Section */
+    .share-section {
+        background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
+        border-radius: 15px;
+        padding: 25px;
+        margin: 25px 0;
+        text-align: center;
+    }
+    
+    .share-section h3 {
+        margin: 0 0 20px 0;
+        color: #1a237e;
+    }
+    
+    .share-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    
+    .share-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 0.95em;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        color: white;
+    }
+    
+    .share-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+    
+    .native-share-btn {
+        background: linear-gradient(135deg, #e91e63 0%, #f06292 100%);
+    }
+    
+    .native-share-btn.hidden {
+        display: none;
+    }
+    
+    .copy-link-btn {
+        background: linear-gradient(135deg, #7b1fa2 0%, #9c27b0 100%);
+    }
+    
+    .copy-link-btn.copied {
+        background: linear-gradient(135deg, #388e3c 0%, #4caf50 100%);
+    }
+    
+    .whatsapp-btn {
+        background: linear-gradient(135deg, #128c7e 0%, #25d366 100%);
+    }
+    
+    .telegram-btn {
+        background: linear-gradient(135deg, #0088cc 0%, #229ed9 100%);
+    }
+    
+    .twitter-btn {
+        background: linear-gradient(135deg, #1da1f2 0%, #1a91da 100%);
+    }
+    
+    .share-icon {
+        font-size: 1.2em;
+    }
+    
+    /* Content Section */
+    .content-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin: 25px 0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .content-title {
+        color: #1a237e;
+        margin-bottom: 20px;
+        font-size: 1.4em;
+        line-height: 1.4;
+    }
+    
+    .content-summary, .content-body {
+        margin-bottom: 20px;
+    }
+    
+    .content-summary h3, .content-body h3 {
+        color: #333;
+        font-size: 1.1em;
+        margin-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
+        padding-bottom: 8px;
+    }
+    
+    .content-preview, .content-full {
+        line-height: 1.8;
+        color: #444;
+        text-align: justify;
+    }
+    
+    .expand-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        padding: 15px 25px;
+        margin-top: 15px;
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .expand-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(26, 35, 126, 0.3);
+    }
+    
+    .expand-btn.expanded {
+        background: linear-gradient(135deg, #757575 0%, #616161 100%);
+    }
+    
+    .source-link {
+        margin-top: 20px;
+        text-align: center;
+    }
+    
+    .source-link .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 25px;
+        background: #f5f5f5;
+        color: #333;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .source-link .btn:hover {
+        background: #e0e0e0;
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .dinle-container {
+            padding: 0;
+        }
+        
+        .audio-player-panel {
+            padding: 20px;
+            border-radius: 15px;
+        }
+        
+        .player-title {
+            font-size: 1.1em;
+        }
+        
+        .control-btn {
+            width: 45px;
+            height: 45px;
+            font-size: 1.2em;
+        }
+        
+        .player-extras {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 15px;
+        }
+        
+        .volume-control, .speed-control {
+            justify-content: center;
+        }
+        
+        .download-btn {
+            justify-content: center;
+        }
+        
+        .content-section {
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .content-title {
+            font-size: 1.2em;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .share-btn {
+            padding: 10px 15px;
+            font-size: 0.85em;
+        }
+        
+        .share-label {
+            display: none;
+        }
+        
+        .share-icon {
+            font-size: 1.5em;
+        }
+        
+        .player-controls {
+            gap: 10px;
+        }
+        
+        .expand-btn {
+            padding: 12px 20px;
+            font-size: 0.9em;
+        }
+    }
+</style>
+
+<!-- Open Graph Meta Tags for Social Sharing -->
+<meta property="og:title" content="{{ (haber.title_turkish or haber.title_english or 'Haber')[:100] }}">
+<meta property="og:description" content="{{ (haber.summary_turkish or '')[:200] }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ request.url }}">
+{% if haber.audio %}
+<meta property="og:audio" content="{{ request.url_root }}dinle/{{ doc_id }}">
+<meta property="og:audio:type" content="audio/mpeg">
+{% endif %}
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ (haber.title_turkish or haber.title_english or 'Haber')[:100] }}">
+<meta name="twitter:description" content="{{ (haber.summary_turkish or '')[:200] }}">
+{% endblock %}
+
+{% block content %}
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <p class="loading-text">Ses yükleniyor...</p>
+</div>
+
+<div class="dinle-container">
+    <!-- Error State (hidden by default) -->
+    <div class="error-state" id="error-state" style="display: none;">
+        <div class="error-icon">⚠️</div>
+        <h2>Ses Dosyası Bulunamadı</h2>
+        <p>Bu haber için ses dosyası henüz oluşturulmamış veya yüklenirken bir hata oluştu.</p>
+        <button class="btn btn-primary" onclick="location.reload()">🔄 Tekrar Dene</button>
+    </div>
+    
+    <!-- Audio Player Panel -->
+    <div class="audio-player-panel disabled" id="audio-player-panel">
+        <div class="player-header">
+            <span class="player-title">🎧 Ses Oynatıcı</span>
+        </div>
+        
+        <div class="player-controls">
+            <button class="control-btn play-btn" id="play-btn" onclick="playAudio()" disabled title="Oynat">▶</button>
+            <button class="control-btn pause-btn" id="pause-btn" onclick="pauseAudio()" disabled title="Duraklat">⏸</button>
+            <button class="control-btn stop-btn" id="stop-btn" onclick="stopAudio()" disabled title="Durdur">⏹</button>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar-wrapper" id="progress-wrapper" onclick="seekAudio(event)">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="time-display">
+                <span id="current-time">0:00</span>
+                <span id="duration">0:00</span>
+            </div>
+        </div>
+        
+        <div class="player-extras">
+            <div class="volume-control">
+                <span>🔊</span>
+                <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="100" onchange="setVolume(this.value)">
+                <span id="volume-display">100%</span>
+            </div>
+            
+            <div class="speed-control">
+                <span>⚡ Hız:</span>
+                <select class="speed-select" id="speed-select" onchange="setPlaybackSpeed(this.value)">
+                    <option value="0.5">0.5x</option>
+                    <option value="0.75">0.75x</option>
+                    <option value="1" selected>1x</option>
+                    <option value="1.25">1.25x</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2">2x</option>
+                </select>
+            </div>
+            
+            <button class="download-btn" id="download-btn" onclick="downloadAudio()" disabled>
+                📥 <span>İndir</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Article Meta -->
+    <div class="article-meta">
+        <span class="reading-time">
+            <span class="meta-icon">📖</span>
+            {{ reading_time }} dakika okuma süresi
+        </span>
+        <span class="word-count">
+            <span class="meta-icon">📝</span>
+            {{ word_count }} kelime
+        </span>
+        <span class="source-info">
+            <span class="meta-icon">📰</span>
+            {{ haber.source or 'Bilinmeyen Kaynak' }}
+        </span>
+        <span class="view-count">
+            <span class="meta-icon">👁️</span>
+            Bu haber {{ view_count }} kez okundu
+        </span>
+    </div>
+    
+    <!-- Share Section -->
+    <div class="share-section">
+        <h3>Bu Haberi Paylaş</h3>
+        <div class="share-buttons">
+            <!-- Native Share Button -->
+            <button class="share-btn native-share-btn" onclick="nativeShare()" title="Paylaş" id="native-share-btn">
+                <span class="share-icon">📤</span>
+                <span class="share-label">Paylaş</span>
+            </button>
+            
+            <!-- Copy Link Button -->
+            <button class="share-btn copy-link-btn" onclick="copyPageLink()" title="Linki Kopyala" id="copy-link-btn">
+                <span class="share-icon">🔗</span>
+                <span class="share-label">Kopyala</span>
+            </button>
+            
+            <!-- WhatsApp -->
+            <a href="https://wa.me/?text={{ (haber.title_turkish or haber.title_english or '')[:100] | urlencode }}%0A%0A{{ request.url | urlencode }}" 
+               target="_blank" 
+               class="share-btn whatsapp-btn" 
+               title="WhatsApp'ta Paylaş">
+                <span class="share-icon">📱</span>
+                <span class="share-label">WhatsApp</span>
+            </a>
+            
+            <!-- Telegram -->
+            <a href="https://t.me/share/url?url={{ request.url | urlencode }}&text={{ (haber.title_turkish or haber.title_english or '')[:100] | urlencode }}" 
+               target="_blank" 
+               class="share-btn telegram-btn"
+               title="Telegram'da Paylaş">
+                <span class="share-icon">✈️</span>
+                <span class="share-label">Telegram</span>
+            </a>
+            
+            <!-- Twitter/X -->
+            <a href="https://twitter.com/intent/tweet?text={{ (haber.title_turkish or haber.title_english or '')[:100] | urlencode }}&url={{ request.url | urlencode }}" 
+               target="_blank" 
+               class="share-btn twitter-btn"
+               title="Twitter'da Paylaş">
+                <span class="share-icon">🐦</span>
+                <span class="share-label">Twitter</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Content Section -->
+    <div class="content-section">
+        <h2 class="content-title">{{ haber.title_turkish or haber.title_english or 'Başlık Yok' }}</h2>
+        
+        <div class="content-summary">
+            <h3>Özet</h3>
+            <p>{{ haber.summary_turkish or 'Özet bulunmuyor.' }}</p>
+        </div>
+        
+        <div class="content-body">
+            <h3>İçerik</h3>
+            {% set full_content = haber.content_turkish or haber.content_english or '' %}
+            <!-- Show first 500 characters by default -->
+            <div class="content-preview" id="content-preview">
+                {{ full_content[:500] }}{% if full_content|length > 500 %}...{% endif %}
+            </div>
+            
+            <!-- Full content (hidden by default) -->
+            <div class="content-full" id="content-full" style="display: none;">
+                {{ full_content or 'İçerik bulunmuyor.' }}
+            </div>
+            
+            <!-- Toggle button (only shown if content > 500 chars) -->
+            {% if full_content|length > 500 %}
+            <button class="expand-btn" id="expand-btn" onclick="toggleContent()">
+                <span class="expand-icon">📖</span>
+                <span class="expand-label">Haberin Devamını Görüntüle</span>
+            </button>
+            {% endif %}
+        </div>
+        
+        <!-- Link to original source -->
+        <div class="source-link">
+            <a href="{{ haber.link }}" target="_blank" class="btn">
+                🔗 Orijinal Kaynağa Git
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global variables
+var audioElement = null;
+var audioBase64Data = {{ (haber.audio or '') | tojson }};
+
+// Cookie helper functions
+function getCookie(name) {
+    var value = "; " + document.cookie;
+    var parts = value.split("; " + name + "=");
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
+}
+
+function setCookie(name, value, days) {
+    var d = new Date();
+    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = name + "=" + value + ";expires=" + d.toUTCString() + ";path=/";
+}
+
+// Base64 to Blob conversion
+function base64ToBlob(base64, mimeType) {
+    var byteCharacters = atob(base64);
+    var byteNumbers = new Array(byteCharacters.length);
+    for (var i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    var byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mimeType });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    var loadingOverlay = document.getElementById('loading-overlay');
+    var errorState = document.getElementById('error-state');
+    var playerPanel = document.getElementById('audio-player-panel');
+    var nativeShareBtn = document.getElementById('native-share-btn');
+    
+    // Check Web Share API support
+    if (!navigator.share) {
+        nativeShareBtn.classList.add('hidden');
+    }
+    
+    // Load saved settings from cookies
+    loadSavedSettings();
+    
+    // Check if audio exists
+    if (!audioBase64Data) {
+        loadingOverlay.classList.add('hidden');
+        errorState.style.display = 'block';
+        return;
+    }
+    
+    // Create audio element
+    try {
+        var audioBlob = base64ToBlob(audioBase64Data, 'audio/mpeg');
+        var audioUrl = URL.createObjectURL(audioBlob);
+        
+        audioElement = new Audio();
+        
+        audioElement.addEventListener('canplaythrough', function() {
+            loadingOverlay.classList.add('hidden');
+            playerPanel.classList.remove('disabled');
+            enablePlayerControls();
+            
+            // Update duration display
+            updateTimeDisplay();
+        }, { once: true });
+        
+        audioElement.addEventListener('timeupdate', updateProgress);
+        audioElement.addEventListener('ended', onAudioEnded);
+        audioElement.addEventListener('play', function() { updateButtonStates(true); });
+        audioElement.addEventListener('pause', function() { updateButtonStates(false); });
+        
+        audioElement.addEventListener('error', function(e) {
+            console.error('Audio error:', e);
+            loadingOverlay.classList.add('hidden');
+            errorState.style.display = 'block';
+        });
+        
+        audioElement.src = audioUrl;
+        audioElement.load();
+        
+    } catch (e) {
+        console.error('Error setting up audio:', e);
+        loadingOverlay.classList.add('hidden');
+        errorState.style.display = 'block';
+    }
+});
+
+function loadSavedSettings() {
+    // Load volume
+    var savedVolume = getCookie('audio_volume');
+    if (savedVolume !== null) {
+        document.getElementById('volume-slider').value = savedVolume;
+        document.getElementById('volume-display').textContent = savedVolume + '%';
+    }
+}
+
+function enablePlayerControls() {
+    // Initially: play enabled, pause and stop disabled (not playing yet)
+    document.getElementById('play-btn').disabled = false;
+    document.getElementById('pause-btn').disabled = true;
+    document.getElementById('stop-btn').disabled = true;
+    document.getElementById('download-btn').disabled = false;
+}
+
+function updateButtonStates(isPlaying) {
+    // When playing: play disabled, pause+stop enabled
+    // When paused/stopped: play enabled, pause disabled, stop enabled (if has progress)
+    var playBtn = document.getElementById('play-btn');
+    var pauseBtn = document.getElementById('pause-btn');
+    var stopBtn = document.getElementById('stop-btn');
+    
+    if (isPlaying) {
+        playBtn.disabled = true;
+        pauseBtn.disabled = false;
+        stopBtn.disabled = false;
+    } else {
+        playBtn.disabled = false;
+        pauseBtn.disabled = true;
+        // Stop is enabled if we have some progress (not at beginning)
+        stopBtn.disabled = audioElement ? audioElement.currentTime === 0 : true;
+    }
+}
+
+function playAudio() {
+    if (!audioElement) return;
+    audioElement.play();
+}
+
+function pauseAudio() {
+    if (!audioElement) return;
+    audioElement.pause();
+}
+
+function stopAudio() {
+    if (!audioElement) return;
+    audioElement.pause();
+    audioElement.currentTime = 0;
+    updateProgress();
+    // After stop: play enabled, pause+stop disabled
+    document.getElementById('play-btn').disabled = false;
+    document.getElementById('pause-btn').disabled = true;
+    document.getElementById('stop-btn').disabled = true;
+}
+
+function updateProgress() {
+    if (!audioElement) return;
+    
+    var progressBar = document.getElementById('progress-bar');
+    var progress = (audioElement.currentTime / audioElement.duration) * 100;
+    progressBar.style.width = progress + '%';
+    
+    updateTimeDisplay();
+}
+
+function updateTimeDisplay() {
+    if (!audioElement) return;
+    
+    document.getElementById('current-time').textContent = formatTime(audioElement.currentTime);
+    document.getElementById('duration').textContent = formatTime(audioElement.duration || 0);
+}
+
+function formatTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
+    var mins = Math.floor(seconds / 60);
+    var secs = Math.floor(seconds % 60);
+    return mins + ':' + (secs < 10 ? '0' : '') + secs;
+}
+
+function seekAudio(event) {
+    if (!audioElement) return;
+    
+    var wrapper = document.getElementById('progress-wrapper');
+    var rect = wrapper.getBoundingClientRect();
+    var clickX = event.clientX - rect.left;
+    var percent = clickX / rect.width;
+    
+    audioElement.currentTime = percent * audioElement.duration;
+}
+
+function setVolume(value) {
+    if (audioElement) {
+        audioElement.volume = value / 100;
+    }
+    document.getElementById('volume-display').textContent = value + '%';
+    setCookie('audio_volume', value, 30);
+}
+
+function setPlaybackSpeed(speed) {
+    if (audioElement) {
+        audioElement.playbackRate = parseFloat(speed);
+    }
+}
+
+function onAudioEnded() {
+    document.getElementById('progress-bar').style.width = '0%';
+    // Audio ended: play enabled, pause+stop disabled
+    document.getElementById('play-btn').disabled = false;
+    document.getElementById('pause-btn').disabled = true;
+    document.getElementById('stop-btn').disabled = true;
+}
+
+function downloadAudio() {
+    if (!audioBase64Data) return;
+    
+    var audioBlob = base64ToBlob(audioBase64Data, 'audio/mpeg');
+    var url = URL.createObjectURL(audioBlob);
+    
+    var now = new Date();
+    var timestamp = now.getFullYear().toString() +
+        (now.getMonth() + 1).toString().padStart(2, '0') +
+        now.getDate().toString().padStart(2, '0') + '_' +
+        now.getHours().toString().padStart(2, '0') +
+        now.getMinutes().toString().padStart(2, '0') +
+        now.getSeconds().toString().padStart(2, '0');
+    var filename = 'haber_' + timestamp + '.mp3';
+    
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Share functions
+function nativeShare() {
+    var title = {{ (haber.title_turkish or haber.title_english or 'Haber')[:100] | tojson }};
+    var summary = {{ (haber.summary_turkish or '')[:200] | tojson }};
+    var url = window.location.href;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: title,
+            text: summary,
+            url: url
+        })
+        .then(function() {
+            console.log('Shared successfully');
+        })
+        .catch(function(error) {
+            console.log('Error sharing:', error);
+            copyPageLink();
+        });
+    } else {
+        copyPageLink();
+    }
+}
+
+function copyPageLink() {
+    var btn = document.getElementById('copy-link-btn');
+    var url = window.location.href;
+    
+    navigator.clipboard.writeText(url).then(function() {
+        var label = btn.querySelector('.share-label');
+        var originalText = label.textContent;
+        label.textContent = 'Kopyalandı!';
+        btn.classList.add('copied');
+        
+        setTimeout(function() {
+            label.textContent = originalText;
+            btn.classList.remove('copied');
+        }, 2000);
+    }).catch(function(err) {
+        // Fallback
+        var input = document.createElement('input');
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        
+        var label = btn.querySelector('.share-label');
+        label.textContent = 'Kopyalandı!';
+        btn.classList.add('copied');
+        
+        setTimeout(function() {
+            label.textContent = 'Kopyala';
+            btn.classList.remove('copied');
+        }, 2000);
+    });
+}
+
+// Content expansion
+function toggleContent() {
+    var preview = document.getElementById('content-preview');
+    var full = document.getElementById('content-full');
+    var btn = document.getElementById('expand-btn');
+    var label = btn.querySelector('.expand-label');
+    
+    if (full.style.display === 'none') {
+        preview.style.display = 'none';
+        full.style.display = 'block';
+        label.textContent = 'İçeriği Kısalt';
+        btn.classList.add('expanded');
+        full.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+        preview.style.display = 'block';
+        full.style.display = 'none';
+        label.textContent = 'Haberin Devamını Görüntüle';
+        btn.classList.remove('expanded');
+    }
+}
+</script>
+{% endblock %}
+

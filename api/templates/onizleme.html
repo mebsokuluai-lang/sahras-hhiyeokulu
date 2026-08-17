@@ -1,0 +1,1314 @@
+{% extends "base.html" %}
+
+{% block title %}Gönderim Öncesi Ön İzleme{% endblock %}
+
+{% block extra_css %}
+<style>
+    .preview-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .preview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .preview-header h1 {
+        margin: 0;
+        color: #1a237e;
+    }
+    
+    .back-link {
+        color: #1976d2;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .preview-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .preview-card-header {
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        color: white;
+        padding: 20px 25px;
+    }
+    
+    .preview-card-header h2 {
+        margin: 0 0 10px 0;
+        font-size: 1.3em;
+    }
+    
+    .preview-meta {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        font-size: 0.9em;
+        opacity: 0.9;
+    }
+    
+    .preview-card-body {
+        padding: 25px;
+    }
+    
+    .unified-editor {
+        width: 100%;
+        min-height: 500px;
+        padding: 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1em;
+        line-height: 1.7;
+        resize: vertical;
+        transition: all 0.3s ease;
+        font-family: inherit;
+        white-space: pre-wrap;
+    }
+    
+    .unified-editor:focus {
+        outline: none;
+        border-color: #1976d2;
+        box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.1);
+    }
+    
+    .unified-editor.modified {
+        border-color: #ff9800;
+        background: #fff8e1;
+    }
+    
+    /* Action Bar */
+    .action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 25px;
+        background: #f5f5f5;
+        border-top: 1px solid #e0e0e0;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .edit-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .control-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.95em;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .undo-btn {
+        background: #ff9800;
+        color: white;
+    }
+    
+    .undo-btn:hover:not(:disabled) {
+        background: #f57c00;
+    }
+    
+    .redo-btn {
+        background: #2196f3;
+        color: white;
+    }
+    
+    .redo-btn:hover:not(:disabled) {
+        background: #1976d2;
+    }
+    
+    .save-btn {
+        background: #4caf50;
+        color: white;
+    }
+    
+    .save-btn:hover:not(:disabled) {
+        background: #388e3c;
+    }
+    
+    .copy-btn {
+        background: #9c27b0;
+        color: white;
+    }
+    
+    .copy-btn:hover:not(:disabled) {
+        background: #7b1fa2;
+    }
+    
+    .copy-btn.copied {
+        background: #4caf50;
+    }
+    
+    .audio-btn {
+        background: #e91e63;
+        color: white;
+    }
+    
+    .audio-btn:hover:not(:disabled) {
+        background: #c2185b;
+    }
+    
+    .audio-btn.loading {
+        background: #9e9e9e;
+        cursor: wait;
+    }
+    
+    .audio-btn.success {
+        background: #4caf50;
+    }
+    
+    .audio-status {
+        font-size: 0.85em;
+        color: #4caf50;
+        margin-top: 5px;
+        display: none;
+    }
+    
+    .audio-status.visible {
+        display: block;
+    }
+    
+    .audio-btn-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .audio-buttons-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .copy-audio-btn {
+        background: #673ab7;
+        color: white;
+    }
+    
+    .copy-audio-btn:hover:not(:disabled) {
+        background: #512da8;
+    }
+    
+    .copy-audio-btn.copied {
+        background: #4caf50;
+    }
+    
+    .control-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    /* Audio Player Panel */
+    .audio-player-panel {
+        background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+        padding: 20px 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+        border-top: 1px solid #e0e0e0;
+    }
+    
+    .audio-player-panel.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+        background: #e0e0e0;
+    }
+    
+    .audio-player-label {
+        font-weight: 500;
+        color: #880e4f;
+    }
+    
+    .audio-player-panel.disabled .audio-player-label {
+        color: #666;
+    }
+    
+    .audio-controls {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .audio-control-btn {
+        width: 45px;
+        height: 45px;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.2em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    
+    .play-btn {
+        background: #4caf50;
+        color: white;
+    }
+    
+    .play-btn:hover:not(:disabled) {
+        background: #388e3c;
+        transform: scale(1.1);
+    }
+    
+    .pause-btn {
+        background: #ff9800;
+        color: white;
+    }
+    
+    .pause-btn:hover:not(:disabled) {
+        background: #f57c00;
+        transform: scale(1.1);
+    }
+    
+    .stop-btn {
+        background: #f44336;
+        color: white;
+    }
+    
+    .stop-btn:hover:not(:disabled) {
+        background: #d32f2f;
+        transform: scale(1.1);
+    }
+    
+    .audio-control-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .audio-progress {
+        flex: 1;
+        max-width: 300px;
+        height: 8px;
+        background: #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .audio-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #e91e63, #9c27b0);
+        width: 0%;
+        transition: width 0.1s linear;
+    }
+    
+    .audio-time {
+        font-size: 0.9em;
+        color: #666;
+        min-width: 80px;
+        text-align: center;
+    }
+    
+    .autosave-status {
+        font-size: 0.9em;
+        color: #666;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .autosave-status.saving {
+        color: #ff9800;
+    }
+    
+    .autosave-status.saved {
+        color: #4caf50;
+    }
+    
+    .autosave-status.error {
+        color: #f44336;
+    }
+    
+    /* Total Stats */
+    .total-stats {
+        background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
+        padding: 20px 25px;
+        display: flex;
+        justify-content: center;
+        gap: 40px;
+        flex-wrap: wrap;
+    }
+    
+    .total-stat {
+        text-align: center;
+    }
+    
+    .total-stat-value {
+        font-size: 1.8em;
+        font-weight: bold;
+        color: #1a237e;
+    }
+    
+    .total-stat-label {
+        font-size: 0.9em;
+        color: #5c6bc0;
+    }
+    
+    /* ============================================
+       RESPONSIVE STYLES - Mobile
+       ============================================ */
+    
+    @media (max-width: 768px) {
+        .preview-container {
+            padding: 0;
+        }
+        
+        .preview-header h1 {
+            font-size: 1.3em;
+        }
+        
+        .preview-card-header {
+            padding: 15px 20px;
+        }
+        
+        .preview-card-header h2 {
+            font-size: 1.1em;
+        }
+        
+        .preview-meta {
+            gap: 10px;
+            font-size: 0.85em;
+        }
+        
+        .preview-card-body {
+            padding: 15px;
+        }
+        
+        .unified-editor {
+            min-height: 350px;
+            padding: 15px;
+            font-size: 16px; /* Prevents iOS zoom */
+        }
+        
+        .total-stats {
+            gap: 20px;
+            padding: 15px;
+        }
+        
+        .total-stat-value {
+            font-size: 1.4em;
+        }
+        
+        .action-bar {
+            padding: 15px;
+        }
+        
+        .edit-controls {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            padding: 10px 15px;
+            font-size: 0.85em;
+        }
+        
+        .audio-buttons-row {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .audio-btn-wrapper {
+            width: 100%;
+            align-items: center;
+        }
+        
+        /* Audio Player Panel Mobile */
+        .audio-player-panel {
+            padding: 15px;
+            gap: 10px;
+        }
+        
+        .audio-controls {
+            gap: 8px;
+        }
+        
+        .audio-control-btn {
+            width: 40px;
+            height: 40px;
+            font-size: 1em;
+        }
+        
+        .audio-progress {
+            max-width: 100%;
+            width: 100%;
+            order: 10;
+        }
+        
+        .audio-time {
+            font-size: 0.85em;
+            min-width: 70px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .preview-header h1 {
+            font-size: 1.1em;
+        }
+        
+        .preview-meta span {
+            font-size: 0.8em;
+        }
+        
+        .control-btn {
+            padding: 8px 12px;
+            font-size: 0.8em;
+            gap: 4px;
+        }
+        
+        .total-stat-value {
+            font-size: 1.2em;
+        }
+        
+        .total-stat-label {
+            font-size: 0.8em;
+        }
+        
+        .audio-player-label {
+            font-size: 0.9em;
+        }
+    }
+    
+    /* API Key Warning */
+    .api-key-warning {
+        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+        border-left: 4px solid #ff9800;
+        padding: 15px 20px;
+        border-radius: 0 8px 8px 0;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .api-key-warning-icon {
+        font-size: 1.5em;
+    }
+    
+    .api-key-warning-text {
+        flex: 1;
+        color: #e65100;
+    }
+    
+    .api-key-warning-text a {
+        color: #e65100;
+        font-weight: 600;
+    }
+    
+    .api-key-warning-text a:hover {
+        color: #bf360c;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="preview-container">
+    <div class="preview-header">
+        <div>
+            <a href="{{ url_for('get_haberler') }}" class="back-link">← Haberlere Dön</a>
+            <h1>📝 Gönderim Öncesi Ön İzleme</h1>
+        </div>
+    </div>
+    
+    <div class="preview-card">
+        <div class="preview-card-header">
+            <h2>{{ haber.source or 'Kaynak Bilinmiyor' }}</h2>
+            <div class="preview-meta">
+                <span>📅 {{ haber.date_turkish or haber.date_english or 'Tarih Yok' }}</span>
+                <span>⭐ İlgi Puanı: {{ haber.interest_score or 0 }}/10</span>
+                <span>📂 {{ haber.category or 'Kategori Yok' }}</span>
+            </div>
+        </div>
+        
+        <div class="preview-card-body">
+            <textarea 
+                id="unified-editor" 
+                class="unified-editor"
+                oninput="handleInput(this)"></textarea>
+        </div>
+        
+        <!-- Total Stats -->
+        <div class="total-stats">
+            <div class="total-stat">
+                <div class="total-stat-value" id="total-chars">0</div>
+                <div class="total-stat-label">Toplam Karakter</div>
+            </div>
+            <div class="total-stat">
+                <div class="total-stat-value" id="total-words">0</div>
+                <div class="total-stat-label">Toplam Kelime</div>
+            </div>
+        </div>
+        
+        <!-- API Key Warning (if not set) -->
+        {% if not has_api_key %}
+        <div class="api-key-warning">
+            <span class="api-key-warning-icon">⚠️</span>
+            <div class="api-key-warning-text">
+                <strong>Ses Oluşturma için API Anahtarı Gerekli</strong><br>
+                Ses oluşturma özelliğini kullanmak için ElevenLabs API anahtarınızı 
+                <a href="{{ url_for('admin_panel') }}">Admin Panel</a>'den ayarlamanız gerekmektedir.
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Action Bar -->
+        <div class="action-bar">
+            <div class="edit-controls">
+                <button class="control-btn undo-btn" id="undo-btn" onclick="undo()" disabled>
+                    ↩️ Geri Al
+                </button>
+                <button class="control-btn redo-btn" id="redo-btn" onclick="redo()" disabled>
+                    ↪️ İleri Al
+                </button>
+                <button class="control-btn save-btn" id="save-btn" onclick="savePreview()">
+                    💾 Kaydet
+                </button>
+                <button class="control-btn copy-btn" id="copy-btn" onclick="copyToClipboard()">
+                    📋 Kopyala
+                </button>
+                <div class="audio-btn-wrapper">
+                    <div class="audio-buttons-row">
+                        <button class="control-btn audio-btn" id="audio-btn" onclick="generateAudio()" {% if not has_api_key %}disabled title="API anahtarı gerekli"{% endif %}>
+                            🔊 Ses Oluştur
+                        </button>
+                        <button class="control-btn copy-audio-btn" id="copy-audio-btn" onclick="copyOrDownloadAudio()" disabled>
+                            📥 Ses Kopyala/İndir
+                        </button>
+                    </div>
+                    <span class="audio-status" id="audio-status">✓ Audio kopyalandı</span>
+                </div>
+                <span class="autosave-status" id="autosave-status"></span>
+            </div>
+        </div>
+        
+        <!-- Audio Player Panel -->
+        <div class="audio-player-panel disabled" id="audio-player-panel">
+            <span class="audio-player-label">🎵 Audio Player</span>
+            <div class="audio-controls">
+                <button class="audio-control-btn play-btn" id="play-btn" onclick="playAudio()" disabled>
+                    ▶
+                </button>
+                <button class="audio-control-btn pause-btn" id="pause-btn" onclick="pauseAudio()" disabled>
+                    ⏸
+                </button>
+                <button class="audio-control-btn stop-btn" id="stop-btn" onclick="stopAudio()" disabled>
+                    ⏹
+                </button>
+            </div>
+            <div class="audio-progress" id="audio-progress">
+                <div class="audio-progress-bar" id="audio-progress-bar"></div>
+            </div>
+            <span class="audio-time" id="audio-time">0:00 / 0:00</span>
+        </div>
+        
+        <!-- Listening Link Section (shown after audio is generated) -->
+        <div class="listening-link-section" id="listening-link-section" style="display: none; margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 10px;">
+            <h3 style="margin: 0 0 15px 0; color: #2e7d32;">🔗 Dinleme Linki</h3>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="text" id="listening-link-input" readonly style="flex: 1; min-width: 200px; padding: 12px 15px; border: 2px solid #4caf50; border-radius: 8px; font-size: 0.95em; background: white;">
+                <button onclick="copyListeningLink()" style="padding: 12px 20px; background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.3s ease;" id="copy-listening-link-btn">📋 Kopyala</button>
+            </div>
+            <p style="margin: 10px 0 0 0; color: #666; font-size: 0.9em;">Bu linki paylaşarak herkes haberi dinleyebilir.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Store the news link, date, and doc_id
+const newsLink = {{ haber.link | tojson }};
+const newsDate = {{ (haber.date_turkish or haber.date_english or '') | tojson }};
+const docId = {{ doc_id | tojson }};
+
+// Get initial values from server
+const titleText = {{ (haber.gonderim_oncesi_onizleme.title if haber.gonderim_oncesi_onizleme else (haber.title_turkish or haber.title_english or '')) | tojson }};
+const summaryText = {{ (haber.gonderim_oncesi_onizleme.summary if haber.gonderim_oncesi_onizleme else (haber.summary_turkish or '')) | tojson }};
+const contentText = {{ (haber.gonderim_oncesi_onizleme.content if haber.gonderim_oncesi_onizleme else (haber.content_turkish or haber.content_english or '')) | tojson }};
+
+// Build the unified content
+const initialContent = `* BAŞLIK:
+${titleText}
+
+* ÖZET:
+${summaryText}
+
+* İÇERİK:
+${contentText}
+
+* TARİH:
+${newsDate}
+
+* LİNK:
+${newsLink}`;
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('unified-editor').value = initialContent;
+    
+    // Save initial state
+    saveState();
+    
+    // Update stats
+    updateStats();
+    
+    console.log('Preview page initialized');
+});
+
+// History management
+let history = {
+    states: [],
+    currentIndex: -1
+};
+
+let autosaveTimer = null;
+const AUTOSAVE_DELAY = 10000; // 10 seconds
+
+function getCurrentState() {
+    return document.getElementById('unified-editor').value;
+}
+
+function saveState() {
+    const state = getCurrentState();
+    
+    // Remove any future states if we're not at the end
+    if (history.currentIndex < history.states.length - 1) {
+        history.states = history.states.slice(0, history.currentIndex + 1);
+    }
+    
+    // Don't save duplicate states
+    if (history.states.length > 0) {
+        const lastState = history.states[history.states.length - 1];
+        if (lastState === state) {
+            return;
+        }
+    }
+    
+    history.states.push(state);
+    history.currentIndex = history.states.length - 1;
+    
+    // Limit history size
+    if (history.states.length > 50) {
+        history.states.shift();
+        history.currentIndex--;
+    }
+    
+    updateButtonStates();
+}
+
+function restoreState(state) {
+    document.getElementById('unified-editor').value = state;
+    updateStats();
+    markModified();
+}
+
+function undo() {
+    if (history.currentIndex > 0) {
+        history.currentIndex--;
+        restoreState(history.states[history.currentIndex]);
+        updateButtonStates();
+    }
+}
+
+function redo() {
+    if (history.currentIndex < history.states.length - 1) {
+        history.currentIndex++;
+        restoreState(history.states[history.currentIndex]);
+        updateButtonStates();
+    }
+}
+
+function updateButtonStates() {
+    document.getElementById('undo-btn').disabled = history.currentIndex <= 0;
+    document.getElementById('redo-btn').disabled = history.currentIndex >= history.states.length - 1;
+}
+
+function handleInput(element) {
+    // Mark as modified
+    element.classList.add('modified');
+    
+    // Update stats
+    updateStats();
+    
+    // Save state for undo/redo (debounced)
+    clearTimeout(element.stateTimer);
+    element.stateTimer = setTimeout(function() {
+        saveState();
+    }, 500);
+    
+    // Reset autosave timer
+    resetAutosave();
+}
+
+function markModified() {
+    document.getElementById('unified-editor').classList.add('modified');
+}
+
+function clearModified() {
+    document.getElementById('unified-editor').classList.remove('modified');
+}
+
+function updateStats() {
+    const text = document.getElementById('unified-editor').value.trim();
+    const charCount = text.length;
+    const wordCount = text ? text.split(/\s+/).filter(w => w.length > 0).length : 0;
+    
+    document.getElementById('total-chars').textContent = charCount;
+    document.getElementById('total-words').textContent = wordCount;
+}
+
+function resetAutosave() {
+    if (autosaveTimer) {
+        clearTimeout(autosaveTimer);
+    }
+    
+    autosaveTimer = setTimeout(function() {
+        autoSave();
+    }, AUTOSAVE_DELAY);
+}
+
+function autoSave() {
+    const statusEl = document.getElementById('autosave-status');
+    statusEl.className = 'autosave-status saving';
+    statusEl.textContent = '⏳ Otomatik kaydediliyor...';
+    
+    doSave(function(success) {
+        if (success) {
+            statusEl.className = 'autosave-status saved';
+            statusEl.textContent = '✓ Otomatik kaydedildi';
+            setTimeout(function() {
+                statusEl.textContent = '';
+                statusEl.className = 'autosave-status';
+            }, 3000);
+        } else {
+            statusEl.className = 'autosave-status error';
+            statusEl.textContent = '✗ Kaydetme hatası';
+        }
+    });
+}
+
+function savePreview() {
+    const statusEl = document.getElementById('autosave-status');
+    statusEl.className = 'autosave-status saving';
+    statusEl.textContent = '💾 Kaydediliyor...';
+    
+    doSave(function(success) {
+        if (success) {
+            statusEl.className = 'autosave-status saved';
+            statusEl.textContent = '✓ Kaydedildi!';
+            clearModified();
+            alert('Ön izleme kaydedildi!');
+            setTimeout(function() {
+                statusEl.textContent = '';
+                statusEl.className = 'autosave-status';
+            }, 3000);
+        } else {
+            statusEl.className = 'autosave-status error';
+            statusEl.textContent = '✗ Kaydetme hatası';
+            alert('Kaydetme sırasında hata oluştu.');
+        }
+    });
+}
+
+function parseUnifiedText(text) {
+    // Parse the unified text back into title, summary, content
+    let title = '';
+    let summary = '';
+    let content = '';
+    
+    // Split by section markers
+    const titleMatch = text.match(/\* BAŞLIK:\s*([\s\S]*?)(?=\* ÖZET:|$)/i);
+    const summaryMatch = text.match(/\* ÖZET:\s*([\s\S]*?)(?=\* İÇERİK:|$)/i);
+    const contentMatch = text.match(/\* İÇERİK:\s*([\s\S]*?)$/i);
+    
+    if (titleMatch) title = titleMatch[1].trim();
+    if (summaryMatch) summary = summaryMatch[1].trim();
+    if (contentMatch) content = contentMatch[1].trim();
+    
+    return { title, summary, content };
+}
+
+function doSave(callback) {
+    const fullText = document.getElementById('unified-editor').value;
+    const parsed = parseUnifiedText(fullText);
+    
+    // Also save the full unified text
+    const previewData = {
+        title: parsed.title,
+        summary: parsed.summary,
+        content: parsed.content,
+        unified_text: fullText
+    };
+    
+    fetch('/onizleme/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            link: newsLink,
+            preview_data: previewData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        callback(data.status === 'success');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        callback(false);
+    });
+}
+
+function copyToClipboard() {
+    const copyBtn = document.getElementById('copy-btn');
+    const textToCopy = document.getElementById('unified-editor').value;
+    
+    navigator.clipboard.writeText(textToCopy).then(function() {
+        // Success - show feedback
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = '✓ Kopyalandı!';
+        copyBtn.classList.add('copied');
+        
+        setTimeout(function() {
+            copyBtn.innerHTML = originalText;
+            copyBtn.classList.remove('copied');
+        }, 2000);
+    }).catch(function(err) {
+        // Fallback for older browsers
+        const textarea = document.getElementById('unified-editor');
+        textarea.select();
+        textarea.setSelectionRange(0, 99999); // For mobile devices
+        
+        try {
+            document.execCommand('copy');
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '✓ Kopyalandı!';
+            copyBtn.classList.add('copied');
+            
+            setTimeout(function() {
+                copyBtn.innerHTML = originalText;
+                copyBtn.classList.remove('copied');
+            }, 2000);
+        } catch (execErr) {
+            console.error('Copy failed:', execErr);
+            alert('Kopyalama başarısız. Lütfen manuel olarak kopyalayın.');
+        }
+    });
+}
+
+// ============================================================================
+// AUDIO TTS FUNCTIONS
+// ============================================================================
+
+let audioElement = null;
+let audioBase64Data = null;
+
+function generateAudio() {
+    const audioBtn = document.getElementById('audio-btn');
+    const audioStatus = document.getElementById('audio-status');
+    const fullText = document.getElementById('unified-editor').value;
+    const parsed = parseUnifiedText(fullText);
+    
+    // Get the summary text (current edited version)
+    const summaryText = parsed.summary;
+    
+    if (!summaryText || summaryText.trim() === '') {
+        alert('Özet metni bulunamadı. Lütfen önce özet kısmını doldurun.');
+        return;
+    }
+    
+    // Show loading state
+    const originalText = audioBtn.innerHTML;
+    audioBtn.innerHTML = '⏳ Oluşturuluyor...';
+    audioBtn.classList.add('loading');
+    audioBtn.disabled = true;
+    audioStatus.classList.remove('visible');
+    
+    // Call the backend API
+    fetch('/onizleme/audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            link: newsLink,
+            summary_text: summaryText
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            audioBase64Data = data.audio_base64;
+            
+            // Create audio element
+            setupAudioPlayer(audioBase64Data);
+            
+            // Try to copy audio to clipboard
+            copyAudioToClipboard(audioBase64Data);
+            
+            // Show success state
+            audioBtn.innerHTML = '✓ Ses Oluşturuldu!';
+            audioBtn.classList.remove('loading');
+            audioBtn.classList.add('success');
+            audioStatus.classList.add('visible');
+            
+            // Enable audio player
+            enableAudioPlayer();
+            
+            // Show listening link and embed it in editor
+            onAudioGenerated();
+            
+            setTimeout(function() {
+                audioBtn.innerHTML = originalText;
+                audioBtn.classList.remove('success');
+                audioBtn.disabled = false;
+            }, 3000);
+        } else {
+            // Check if API key is missing
+            if (data.api_key_missing) {
+                throw new Error('API anahtarı ayarlanmamış. Lütfen Admin Panel\'den API anahtarınızı girin.');
+            }
+            throw new Error(data.message || 'Audio generation failed');
+        }
+    })
+    .catch(error => {
+        console.error('Error generating audio:', error);
+        audioBtn.innerHTML = '✗ Hata!';
+        audioBtn.classList.remove('loading');
+        audioBtn.disabled = false;
+        
+        // Show more descriptive error message
+        if (error.message.includes('API anahtarı')) {
+            alert(error.message + '\n\nAdmin Panel\'e gitmek için Tamam\'a tıklayın.');
+            window.open('/admin', '_blank');
+        } else {
+            alert('Ses oluşturma sırasında hata: ' + error.message);
+        }
+        
+        setTimeout(function() {
+            audioBtn.innerHTML = originalText;
+        }, 2000);
+    });
+}
+
+function setupAudioPlayer(base64Data) {
+    // Create audio element from base64 data
+    const audioBlob = base64ToBlob(base64Data, 'audio/mpeg');
+    const audioUrl = URL.createObjectURL(audioBlob);
+    
+    // Clean up previous audio if exists
+    if (audioElement) {
+        audioElement.pause();
+        URL.revokeObjectURL(audioElement.src);
+    }
+    
+    audioElement = new Audio(audioUrl);
+    
+    // Set up event listeners
+    audioElement.addEventListener('timeupdate', updateProgress);
+    audioElement.addEventListener('ended', onAudioEnded);
+    audioElement.addEventListener('loadedmetadata', function() {
+        updateTimeDisplay();
+    });
+}
+
+function enableAudioPlayer() {
+    const panel = document.getElementById('audio-player-panel');
+    const playBtn = document.getElementById('play-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const copyAudioBtn = document.getElementById('copy-audio-btn');
+    
+    panel.classList.remove('disabled');
+    playBtn.disabled = false;
+    pauseBtn.disabled = false;
+    stopBtn.disabled = false;
+    copyAudioBtn.disabled = false;
+}
+
+function playAudio() {
+    if (audioElement) {
+        audioElement.play();
+    }
+}
+
+function pauseAudio() {
+    if (audioElement) {
+        audioElement.pause();
+    }
+}
+
+function stopAudio() {
+    if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+        updateProgress();
+    }
+}
+
+function updateProgress() {
+    if (!audioElement) return;
+    
+    const progressBar = document.getElementById('audio-progress-bar');
+    const progress = (audioElement.currentTime / audioElement.duration) * 100;
+    progressBar.style.width = progress + '%';
+    
+    updateTimeDisplay();
+}
+
+function updateTimeDisplay() {
+    if (!audioElement) return;
+    
+    const timeDisplay = document.getElementById('audio-time');
+    const current = formatTime(audioElement.currentTime);
+    const duration = formatTime(audioElement.duration || 0);
+    timeDisplay.textContent = current + ' / ' + duration;
+}
+
+function onAudioEnded() {
+    const progressBar = document.getElementById('audio-progress-bar');
+    progressBar.style.width = '0%';
+    updateTimeDisplay();
+}
+
+function formatTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return mins + ':' + (secs < 10 ? '0' : '') + secs;
+}
+
+function base64ToBlob(base64, mimeType) {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mimeType });
+}
+
+function copyAudioToClipboard(base64Data) {
+    const audioBlob = base64ToBlob(base64Data, 'audio/mpeg');
+    
+    // Try using ClipboardItem API (modern browsers)
+    if (navigator.clipboard && window.ClipboardItem) {
+        try {
+            const clipboardItem = new ClipboardItem({
+                'audio/mpeg': audioBlob
+            });
+            navigator.clipboard.write([clipboardItem]).then(function() {
+                console.log('Audio copied to clipboard');
+            }).catch(function(err) {
+                console.log('Clipboard API failed, falling back to download:', err);
+                downloadAudio(base64Data);
+            });
+        } catch (err) {
+            console.log('ClipboardItem not supported, falling back to download:', err);
+            downloadAudio(base64Data);
+        }
+    } else {
+        // Fallback: download the file
+        downloadAudio(base64Data);
+    }
+}
+
+function downloadAudio(base64Data) {
+    const audioBlob = base64ToBlob(base64Data, 'audio/mpeg');
+    const url = URL.createObjectURL(audioBlob);
+    
+    // Generate filename with timestamp: audio_20251212_123405.mp3
+    const now = new Date();
+    const timestamp = now.getFullYear().toString() +
+        (now.getMonth() + 1).toString().padStart(2, '0') +
+        now.getDate().toString().padStart(2, '0') + '_' +
+        now.getHours().toString().padStart(2, '0') +
+        now.getMinutes().toString().padStart(2, '0') +
+        now.getSeconds().toString().padStart(2, '0');
+    const filename = 'audio_' + timestamp + '.mp3';
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log('Audio downloaded as ' + filename);
+}
+
+function copyOrDownloadAudio() {
+    if (!audioBase64Data) {
+        alert('Önce ses oluşturmalısınız.');
+        return;
+    }
+    
+    const copyAudioBtn = document.getElementById('copy-audio-btn');
+    const audioStatus = document.getElementById('audio-status');
+    const originalText = copyAudioBtn.innerHTML;
+    
+    copyAudioBtn.innerHTML = '⏳ İşleniyor...';
+    copyAudioBtn.disabled = true;
+    
+    const audioBlob = base64ToBlob(audioBase64Data, 'audio/mpeg');
+    
+    // Try using ClipboardItem API (modern browsers - desktop Chrome, Edge, etc.)
+    if (navigator.clipboard && window.ClipboardItem) {
+        try {
+            const clipboardItem = new ClipboardItem({
+                'audio/mpeg': audioBlob
+            });
+            navigator.clipboard.write([clipboardItem]).then(function() {
+                console.log('Audio copied to clipboard');
+                copyAudioBtn.innerHTML = '✓ Kopyalandı!';
+                copyAudioBtn.classList.add('copied');
+                audioStatus.textContent = '✓ Audio kopyalandı';
+                audioStatus.classList.add('visible');
+                
+                setTimeout(function() {
+                    copyAudioBtn.innerHTML = originalText;
+                    copyAudioBtn.classList.remove('copied');
+                    copyAudioBtn.disabled = false;
+                }, 2000);
+            }).catch(function(err) {
+                console.log('Clipboard API failed, falling back to download:', err);
+                downloadAudioWithFeedback(copyAudioBtn, originalText, audioStatus);
+            });
+        } catch (err) {
+            console.log('ClipboardItem not supported, falling back to download:', err);
+            downloadAudioWithFeedback(copyAudioBtn, originalText, audioStatus);
+        }
+    } else {
+        // Fallback for mobile (iOS, Android) and older browsers: download the file
+        downloadAudioWithFeedback(copyAudioBtn, originalText, audioStatus);
+    }
+}
+
+function downloadAudioWithFeedback(btn, originalText, statusEl) {
+    downloadAudio(audioBase64Data);
+    
+    btn.innerHTML = '✓ İndirildi!';
+    btn.classList.add('copied');
+    statusEl.textContent = '✓ Audio indirildi';
+    statusEl.classList.add('visible');
+    
+    setTimeout(function() {
+        btn.innerHTML = originalText;
+        btn.classList.remove('copied');
+        btn.disabled = false;
+    }, 2000);
+}
+
+// ============================================================================
+// LISTENING LINK FUNCTIONS
+// ============================================================================
+
+function onAudioGenerated() {
+    const linkSection = document.getElementById('listening-link-section');
+    const linkInput = document.getElementById('listening-link-input');
+    const listeningUrl = window.location.origin + '/dinle/' + docId;
+    
+    // Show the link section
+    linkInput.value = listeningUrl;
+    linkSection.style.display = 'block';
+    
+    // Embed the link in the unified editor after OZET section
+    embedListeningLinkInEditor(listeningUrl);
+}
+
+function embedListeningLinkInEditor(listeningUrl) {
+    const editor = document.getElementById('unified-editor');
+    let content = editor.value;
+    
+    // Check if link is already embedded (avoid duplicates)
+    if (content.includes('Özeti Dinlemek İçin Tıklayınız')) {
+        // Update existing link
+        content = content.replace(
+            /Özeti Dinlemek İçin Tıklayınız: .+/g,
+            'Özeti Dinlemek İçin Tıklayınız: ' + listeningUrl
+        );
+    } else {
+        // Find the end of ÖZET section (before * İÇERİK:)
+        const ozetEndPattern = /(\* ÖZET:\s*\n[\s\S]*?)(\n\n\* İÇERİK:)/i;
+        const match = content.match(ozetEndPattern);
+        
+        if (match) {
+            // Insert the link at the end of the ÖZET content
+            const ozetSection = match[1].trimEnd();
+            const linkText = ' Özeti Dinlemek İçin Tıklayınız: ' + listeningUrl;
+            content = content.replace(
+                ozetEndPattern,
+                ozetSection + linkText + match[2]
+            );
+        } else {
+            // Fallback: append after ÖZET line if pattern not found
+            content = content.replace(
+                /(\* ÖZET:\s*\n[^\n]+)/i,
+                '$1 Özeti Dinlemek İçin Tıklayınız: ' + listeningUrl
+            );
+        }
+    }
+    
+    // Update the editor
+    editor.value = content;
+    
+    // Save state for undo and trigger autosave
+    saveState();
+    triggerAutosave();
+    
+    // Update stats
+    updateStats();
+}
+
+function copyListeningLink() {
+    const linkInput = document.getElementById('listening-link-input');
+    const copyBtn = document.getElementById('copy-listening-link-btn');
+    const url = linkInput.value;
+    
+    navigator.clipboard.writeText(url).then(function() {
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = '✓ Kopyalandı!';
+        copyBtn.style.background = 'linear-gradient(135deg, #388e3c 0%, #4caf50 100%)';
+        
+        setTimeout(function() {
+            copyBtn.textContent = originalText;
+            copyBtn.style.background = 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)';
+        }, 2000);
+    }).catch(function(err) {
+        // Fallback
+        linkInput.select();
+        document.execCommand('copy');
+        
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = '✓ Kopyalandı!';
+        
+        setTimeout(function() {
+            copyBtn.textContent = originalText;
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

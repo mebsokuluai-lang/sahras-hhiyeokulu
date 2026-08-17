@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Teknoloji Haberleri{% endblock %}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+        }
+        
+        /* Navbar */
+        .navbar {
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .navbar-brand {
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        
+        .navbar-nav {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .nav-link.active {
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+        
+        .user-badge {
+            background-color: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: #1976d2;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1565c0;
+        }
+        
+        .btn-success {
+            background-color: #388e3c;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #2e7d32;
+        }
+        
+        .btn-danger {
+            background-color: #d32f2f;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c62828;
+        }
+        
+        .btn-secondary {
+            background-color: #757575;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #616161;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid white;
+            color: white;
+        }
+        
+        .btn-outline:hover {
+            background-color: white;
+            color: #1a237e;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Flash Messages */
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .alert-success {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+            border-left: 4px solid #2e7d32;
+        }
+        
+        .alert-danger {
+            background-color: #ffcdd2;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+        
+        .alert-warning {
+            background-color: #fff9c4;
+            color: #f57f17;
+            border-left: 4px solid #f57f17;
+        }
+        
+        .alert-info {
+            background-color: #b3e5fc;
+            color: #0277bd;
+            border-left: 4px solid #0277bd;
+        }
+        
+        .alert-close {
+            background: none;
+            border: none;
+            font-size: 1.2em;
+            cursor: pointer;
+            opacity: 0.5;
+        }
+        
+        .alert-close:hover {
+            opacity: 1;
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        /* Forms */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+        }
+        
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-check input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+        
+        /* Tables */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table th,
+        .table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .table th {
+            background-color: #f5f5f5;
+            font-weight: 600;
+        }
+        
+        .table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        /* Utilities */
+        .text-center {
+            text-align: center;
+        }
+        
+        .mt-20 {
+            margin-top: 20px;
+        }
+        
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+        
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #757575;
+            font-size: 0.9em;
+        }
+        
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        /* ============================================
+           RESPONSIVE STYLES - Mobile First
+           ============================================ */
+        
+        @media (max-width: 992px) {
+            .navbar {
+                padding: 12px 20px;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            /* Navbar Mobile Layout */
+            .navbar {
+                flex-wrap: wrap;
+                padding: 10px 15px;
+                gap: 10px;
+            }
+            
+            .navbar-brand {
+                font-size: 1.2em;
+            }
+            
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .navbar-nav {
+                display: none;
+                width: 100%;
+                flex-direction: column;
+                gap: 5px;
+                padding-top: 10px;
+                border-top: 1px solid rgba(255,255,255,0.2);
+            }
+            
+            .navbar-nav.active {
+                display: flex;
+            }
+            
+            .nav-link {
+                display: block;
+                padding: 12px 16px;
+                text-align: center;
+            }
+            
+            .user-info {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+                padding-top: 10px;
+                border-top: 1px solid rgba(255,255,255,0.1);
+            }
+            
+            /* Main Content Mobile */
+            .main-content {
+                padding: 15px;
+            }
+            
+            /* Cards Mobile */
+            .card {
+                border-radius: 8px;
+            }
+            
+            .card-header,
+            .card-body {
+                padding: 15px;
+            }
+            
+            /* Buttons Mobile */
+            .btn {
+                padding: 10px 16px;
+                font-size: 0.95em;
+            }
+            
+            /* Forms Mobile */
+            .form-control {
+                padding: 12px 15px;
+                font-size: 16px; /* Prevents iOS zoom */
+            }
+            
+            /* Tables Mobile */
+            .table th,
+            .table td {
+                padding: 10px 8px;
+                font-size: 0.9em;
+            }
+            
+            /* Flex utilities mobile */
+            .flex-between {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .navbar-brand {
+                font-size: 1em;
+            }
+            
+            .main-content {
+                padding: 10px;
+            }
+            
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .user-badge {
+                font-size: 0.8em;
+                padding: 4px 10px;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('get_haberler') }}" class="navbar-brand">💻 Teknoloji Haberleri</a>
+        
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Menü">
+            ☰
+        </button>
+        
+        <div class="navbar-nav" id="navbar-nav">
+            <a href="{{ url_for('get_haberler') }}" class="nav-link">Haberler</a>
+            <a href="{{ url_for('settings') }}" class="nav-link">Ayarlar</a>
+            
+            {% if is_admin %}
+            <a href="{{ url_for('admin_panel') }}" class="nav-link">Admin Panel</a>
+            {% endif %}
+            
+            {% if is_super_admin %}
+            <a href="{{ url_for('super_admin_panel') }}" class="nav-link">Süper Admin</a>
+            {% endif %}
+            
+            <div class="user-info">
+                {% if is_logged_in %}
+                    <span class="user-badge">{{ current_user.username }}</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline">Çıkış</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline">Giriş Yap</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    
+    <main class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+                <span>{{ message }}</span>
+                <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer class="footer">
+        <p>Teknoloji Haberleri Projesi &copy; 2025</p>
+    </footer>
+    
+    <script>
+        function toggleMobileMenu() {
+            const navbarNav = document.getElementById('navbar-nav');
+            navbarNav.classList.toggle('active');
+        }
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const navbar = document.querySelector('.navbar');
+            const navbarNav = document.getElementById('navbar-nav');
+            const toggle = document.querySelector('.mobile-menu-toggle');
+            
+            if (!navbar.contains(event.target)) {
+                navbarNav.classList.remove('active');
+            }
+        });
+        
+        // Close mobile menu when window is resized above mobile breakpoint
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                document.getElementById('navbar-nav').classList.remove('active');
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

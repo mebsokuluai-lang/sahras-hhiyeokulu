@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Sayfa Bulunamadı - 404{% endblock %}
+
+{% block extra_css %}
+<style>
+    .error-container {
+        max-width: 600px;
+        margin: 60px auto;
+        text-align: center;
+    }
+    
+    .error-icon {
+        font-size: 5em;
+        margin-bottom: 20px;
+    }
+    
+    .error-title {
+        font-size: 2em;
+        color: #1a237e;
+        margin-bottom: 15px;
+    }
+    
+    .error-message {
+        font-size: 1.1em;
+        color: #666;
+        margin-bottom: 30px;
+    }
+    
+    .error-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .error-btn {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1em;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .error-btn-primary {
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+        color: white;
+    }
+    
+    .error-btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(26, 35, 126, 0.3);
+    }
+    
+    .error-btn-secondary {
+        background: #f5f5f5;
+        color: #333;
+    }
+    
+    .error-btn-secondary:hover {
+        background: #e0e0e0;
+    }
+    
+    @media (max-width: 480px) {
+        .error-icon {
+            font-size: 3em;
+        }
+        
+        .error-title {
+            font-size: 1.5em;
+        }
+        
+        .error-btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-icon">🔍</div>
+    <h1 class="error-title">Sayfa Bulunamadı</h1>
+    <p class="error-message">{{ message or 'Aradığınız sayfa mevcut değil veya kaldırılmış olabilir.' }}</p>
+    <div class="error-actions">
+        <a href="{{ url_for('get_haberler') }}" class="error-btn error-btn-primary">
+            🏠 Ana Sayfaya Dön
+        </a>
+        <button onclick="history.back()" class="error-btn error-btn-secondary">
+            ← Geri Git
+        </button>
+    </div>
+</div>
+{% endblock %}
+
