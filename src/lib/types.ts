@@ -2,17 +2,28 @@ export interface NewsItem {
   _id?: string;
   id?: string;
   title: string;
+  title_turkish?: string;
+  title_english?: string;
   summary?: string;
+  summary_turkish?: string;
   content?: string;
+  content_turkish?: string;
+  content_english?: string;
   link: string;
   image?: string;
-  category: string; // e.g. "Tıp", "Hemşirelik", "Halk Sağlığı", "Beslenme", "İlaç & Eczacılık", "Acil Durum"
+  category: string;
   source: string;
   pubDate: string;
+  date_turkish?: string;
+  date_english?: string;
   createdAt?: string;
+  interest_score?: number;
+  interestScore?: number;
+  gonderildi?: boolean;
+  tags?: string[];
   isFeatured?: boolean;
   isBreaking?: boolean;
-  aiSummary?: string[]; // 3 bullet points summary by Gemini AI
+  aiSummary?: string[];
   audioUrl?: string;
   readTimeMinutes?: number;
   viewCount?: number;

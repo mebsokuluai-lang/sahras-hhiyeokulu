@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShieldAlert, PhoneCall, ChevronRight, CheckCircle2, Cross, AlertTriangle } from 'lucide-react';
 
 interface FirstAidGuide {
   id: string;
@@ -21,7 +20,7 @@ const FIRST_AID_GUIDES: FirstAidGuide[] = [
     steps: [
       'Kanayan uzvun (kol veya bacak) yara bölgesinin 5-7 cm yukarısına turnikeyi yerleştirin (Asla eklem üzerine takmayın).',
       'Turnike bandını olabildiğince sıkın ve cırt cırtını sabitleyin.',
-      'Sıkıştırma çubuğunu (rüzgarlık/windlass) kanama tamamen durana ve nabız kaybolana kadar çevirin.',
+      'Sıkıştırma çubuğunu kanama tamamen durana ve nabız kaybolana kadar çevirin.',
       'Çubuğu kilitleyin ve turnikenin üzerine takıldığı saati (Örn: 14:30) mutlaka yazın.',
       'Yaralıyı sıcak tutun ve derhal 112 / Sıhhi Tahliye ekibini bilgilendirin.',
     ],
@@ -38,7 +37,7 @@ const FIRST_AID_GUIDES: FirstAidGuide[] = [
     dangerLevel: 'KRİTİK',
     steps: [
       'Yaralının bilincini ve solunumunu kontrol edin (Bak-Dinle-Hisset, maksimum 10 sn).',
-      'Solunum yoksa derhal 112 Acil Servisi arayın veya yanınızdakilere aratın.',
+      'Solunum yoksa derhal 112 Acil Servisi arayın.',
       'Hastayı sert ve düz bir zemine sırtüstü yatırın.',
       'Göğüs kemiğinin alt yarısına ellerinizi üst üste kenetleyip 30 kez göğüs basısı uygulayın (5-6 cm çökme, 100-120 bası/dk).',
       'Hava yolunu açıp 2 kez kurtarıcı soluk verin. 30 bası : 2 soluk ritmini 112 ekibi gelene kadar sürdürün.',
@@ -80,150 +79,81 @@ const FIRST_AID_GUIDES: FirstAidGuide[] = [
       'Su toplayan bülleri (kabarcıkları) kesinlikle patlatmayın.',
     ],
   },
-  {
-    id: 'kirik',
-    title: 'Kırık, Çıkık & Sahra Atellemesi',
-    category: 'Ortopedik Travma',
-    dangerLevel: 'YÜKSEK',
-    steps: [
-      'Kırık şüphesi olan uzvu kesinlikle hareket ettirmeyin.',
-      'Kırık bölgeyi alt ve üst iki eklemi de içine alacak şekilde atel (sert destek tahtası vb.) ile sabitleyin.',
-      'Açık kırık varsa temiz steril bezle yarayı örtün, kemik uçlarına dokunmayın.',
-      'Uzvun uç kısmındaki nabız, ısı ve renk kontrolünü düzenli yapın.',
-    ],
-    doNot: [
-      'Kırık kemiği yerine oturtmaya veya düzeltmeye çalışmayın.',
-      'Yaralı uzva ağırlık vermesine izin vermeyin.',
-    ],
-  },
 ];
 
 export default function FirstAidPage() {
   const [selectedGuide, setSelectedGuide] = useState<FirstAidGuide>(FIRST_AID_GUIDES[0]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 bg-slate-50">
+    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       
-      {/* Emergency Header Banner */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <span className="bg-medical-red text-white text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider inline-flex items-center space-x-1 shadow-sm">
-              <PhoneCall className="w-3.5 h-3.5 animate-bounce" />
-              <span>ACİL SIHHİYE & İLK YARDIM</span>
-            </span>
-            <span className="bg-medical-50 text-medical-700 text-xs font-bold px-3 py-1 rounded-full border border-medical-200">
-              TCCC & Temel Yaşam Desteği
-            </span>
-          </div>
-          
-          <h1 className="text-2xl md:text-4xl font-black text-slate-900">
-            Sahra & Acil İlk Yardım Kılavuzu
-          </h1>
-          <p className="text-xs md:text-sm text-slate-600 max-w-2xl font-medium">
-            Sahra şartlarında ve günlük acil durumlarda hayat kurtaran standart müdahale protokolleri. Soğukkanlı olun, güvenliği sağlayın ve adımları uygulayın.
-          </p>
-        </div>
-
-        <a
-          href="tel:112"
-          className="px-6 py-4 rounded-2xl bg-medical-red hover:bg-red-700 text-white font-black text-lg flex items-center space-x-3 shadow-md shadow-medical-red/30 hover:scale-105 transition shrink-0"
-        >
-          <PhoneCall className="w-6 h-6 animate-pulse" />
-          <span>112 ACİL ARA</span>
+      <div className="page-header">
+        <h1>🚑 Sahra & Acil İlk Yardım Kılavuzu</h1>
+        <a href="tel:112" className="btn btn-danger" style={{ fontSize: '1em', padding: '10px 20px' }}>
+          📞 112 ACİL ARA
         </a>
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         
-        {/* Left Side Topic Selectors */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider px-1">
-            MÜDAHALE KONULARI
-          </h3>
-
-          {FIRST_AID_GUIDES.map(guide => {
-            const isSelected = selectedGuide.id === guide.id;
-
-            return (
-              <button
-                key={guide.id}
-                onClick={() => setSelectedGuide(guide)}
-                className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between shadow-sm ${
-                  isSelected
-                    ? 'bg-white border-medical-red shadow-md ring-1 ring-medical-red/20'
-                    : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
-                }`}
+        {/* Guides List */}
+        <div className="card">
+          <div className="card-header" style={{ background: '#f5f5f5' }}>
+            <h3>Müdahale Konuları</h3>
+          </div>
+          <div className="card-body" style={{ padding: '10px' }}>
+            {FIRST_AID_GUIDES.map(g => (
+              <div
+                key={g.id}
+                onClick={() => setSelectedGuide(g)}
+                style={{
+                  padding: '12px 15px',
+                  borderRadius: '6px',
+                  marginBottom: '8px',
+                  cursor: 'pointer',
+                  background: selectedGuide.id === g.id ? '#e3f2fd' : '#fff',
+                  border: selectedGuide.id === g.id ? '1.5px solid #1976d2' : '1px solid #eee',
+                  transition: 'all 0.2s ease'
+                }}
               >
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <Cross className={`w-4 h-4 ${isSelected ? 'text-medical-red' : 'text-medical-600'}`} />
-                    <h4 className={`text-sm font-bold ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
-                      {guide.title}
-                    </h4>
-                  </div>
-                  <span className="text-[11px] text-slate-500 block pl-6 font-medium">{guide.category}</span>
+                <div style={{ fontWeight: 600, color: selectedGuide.id === g.id ? '#1565c0' : '#333', fontSize: '0.95em' }}>
+                  {g.title}
                 </div>
-
-                <ChevronRight className={`w-5 h-5 shrink-0 transition-transform ${isSelected ? 'text-medical-red translate-x-1' : 'text-slate-400'}`} />
-              </button>
-            );
-          })}
+                <div style={{ fontSize: '0.8em', color: '#666', marginTop: '4px' }}>
+                  {g.category} • <strong style={{ color: g.dangerLevel === 'KRİTİK' ? '#d32f2f' : '#f57c00' }}>{g.dangerLevel}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Right Detail Panel */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
-          
-          <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-4 gap-2">
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-medical-600 uppercase tracking-widest">
-                {selectedGuide.category}
-              </span>
-              <h2 className="text-xl md:text-2xl font-black text-slate-900">{selectedGuide.title}</h2>
-            </div>
-
-            <span className="bg-red-50 border border-red-200 text-medical-red font-black text-xs px-3 py-1 rounded-full">
-              RİSK: {selectedGuide.dangerLevel}
-            </span>
+        {/* Selected Guide Details */}
+        <div className="card" style={{ gridColumn: 'span 2' }}>
+          <div className="card-header" style={{ background: 'linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0 }}>{selectedGuide.title}</h3>
+            <span className="user-badge" style={{ background: 'rgba(255,255,255,0.2)' }}>{selectedGuide.category}</span>
           </div>
-
-          {/* Steps */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>DOĞRU MÜDAHALE ADIMLARI (SIRASIYLA UYGULAYINIZ)</span>
-            </h3>
-
-            <div className="space-y-3">
-              {selectedGuide.steps.map((step, idx) => (
-                <div key={idx} className="flex items-start space-x-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="w-6 h-6 rounded-full bg-medical-600 text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                    {idx + 1}
-                  </span>
-                  <p className="text-xs md:text-sm text-slate-800 leading-relaxed font-medium">{step}</p>
-                </div>
+          <div className="card-body">
+            
+            <h4 style={{ color: '#2e7d32', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              ✓ Doğru Müdahale Adımları (Sırasıyla Uygulayınız)
+            </h4>
+            <ol style={{ paddingLeft: '20px', lineHeight: '1.8', color: '#333', marginBottom: '25px' }}>
+              {selectedGuide.steps.map((st, idx) => (
+                <li key={idx} style={{ marginBottom: '8px' }}>{st}</li>
               ))}
-            </div>
-          </div>
+            </ol>
 
-          {/* Do Nots */}
-          <div className="space-y-3 pt-4 border-t border-slate-100">
-            <h3 className="text-xs font-black text-medical-red uppercase tracking-wider flex items-center space-x-2">
-              <AlertTriangle className="w-4 h-4 text-medical-red" />
-              <span>KESİNLİKLE YAPILMAMASI GEREKEN HAYATİ HATALAR</span>
-            </h3>
-
-            <div className="space-y-2">
-              {selectedGuide.doNot.map((noItem, idx) => (
-                <div key={idx} className="bg-red-50/70 border border-red-200 p-3.5 rounded-2xl text-xs text-red-900 font-semibold flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-medical-red shrink-0" />
-                  <span>{noItem}</span>
-                </div>
+            <h4 style={{ color: '#d32f2f', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              ⚠️ Kesinlikle Yapılmaması Gereken Hatalar
+            </h4>
+            <ul style={{ paddingLeft: '20px', lineHeight: '1.8', color: '#c62828' }}>
+              {selectedGuide.doNot.map((dn, idx) => (
+                <li key={idx} style={{ marginBottom: '6px' }}>{dn}</li>
               ))}
-            </div>
-          </div>
+            </ul>
 
+          </div>
         </div>
 
       </div>

@@ -1,93 +1,95 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { Clock, Eye, Sparkles, Volume2, ExternalLink, ArrowLeft, CheckCircle2, Cross, AlertCircle, Share2, BookOpen } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 import { NewsItem } from '@/lib/types';
-import GlossaryTooltip from '@/components/GlossaryTooltip';
 import AudioPlayer from '@/components/AudioPlayer';
 
-export default function SingleNewsPage() {
+export default function SingleNewsPreviewPage() {
   const params = useParams();
+  const router = useRouter();
   const rawId = params?.id;
   const id = Array.isArray(rawId) ? rawId[0] : (rawId as string);
 
   const [newsItem, setNewsItem] = useState<NewsItem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notFoundState, setNotFoundState] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  // Content states for preview/editor
+  const [editableText, setEditableText] = useState('');
+  const [isModified, setIsModified] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  // AI Summary
   const [aiSummary, setAiSummary] = useState<string[] | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
+
+  // Audio Player
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   useEffect(() => {
     if (!id) return;
 
     let isMounted = true;
-    const fetchSingleNews = async () => {
+    const fetchNews = async () => {
       setLoading(true);
-      setNotFoundState(false);
-
       try {
-        // 1. Try dedicated single news API endpoint
         const res = await fetch(`/api/news/${encodeURIComponent(id)}`);
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.news && isMounted) {
             setNewsItem(data.news);
-            if (data.news.aiSummary && Array.isArray(data.news.aiSummary)) {
-              setAiSummary(data.news.aiSummary);
-            }
+            const fullText = formatUnifiedContent(data.news);
+            setEditableText(fullText);
+            if (data.news.aiSummary) setAiSummary(data.news.aiSummary);
             setLoading(false);
             return;
           }
         }
 
-        // 2. Fallback: Search all news list
-        const fallbackRes = await fetch('/api/news');
-        if (fallbackRes.ok) {
-          const allData = await fallbackRes.json();
-          if (allData.news && Array.isArray(allData.news)) {
-            const decodedId = decodeURIComponent(id);
-            const found = allData.news.find(
-              (n: any) =>
-                n._id === id ||
-                n.id === id ||
-                n.link === id ||
-                n.link === decodedId ||
-                n.title === decodedId ||
-                encodeURIComponent(n.title) === id
-            );
-
-            if (found && isMounted) {
-              setNewsItem(found);
-              if (found.aiSummary && Array.isArray(found.aiSummary)) {
-                setAiSummary(found.aiSummary);
-              }
-              setLoading(false);
-              return;
-            }
+        // Fallback search
+        const allRes = await fetch('/api/news');
+        if (allRes.ok) {
+          const allData = await allRes.json();
+          const decoded = decodeURIComponent(id);
+          const found = allData.news?.find((n: any) =>
+            n._id === id || n.id === id || n.link === id || n.link === decoded || n.title === decoded
+          );
+          if (found && isMounted) {
+            setNewsItem(found);
+            const fullText = formatUnifiedContent(found);
+            setEditableText(fullText);
+            if (found.aiSummary) setAiSummary(found.aiSummary);
+            setLoading(false);
+            return;
           }
         }
 
-        if (isMounted) {
-          setNotFoundState(true);
-        }
+        if (isMounted) setNotFound(true);
       } catch (err) {
-        console.error('Haber yüklenirken hata oluştu:', err);
-        if (isMounted) setNotFoundState(true);
+        console.error('Haber yüklenemedi:', err);
+        if (isMounted) setNotFound(true);
       } finally {
         if (isMounted) setLoading(false);
       }
     };
 
-    fetchSingleNews();
-
-    return () => {
-      isMounted = false;
-    };
+    fetchNews();
+    return () => { isMounted = false; };
   }, [id]);
+
+  const formatUnifiedContent = (item: NewsItem) => {
+    const title = item.title_turkish || item.title_english || item.title || '';
+    const summary = item.summary_turkish || item.summary || '';
+    const content = item.content_turkish || item.content_english || item.content || '';
+    const source = item.source || '';
+    const link = item.link || '';
+
+    return `📢 ${title}\n\n📝 ÖZET:\n${summary}\n\n📄 DETAY:\n${content}\n\n🔗 Kaynak: ${source} (${link})`;
+  };
 
   const handleFetchAiSummary = async () => {
     if (!newsItem) return;
@@ -112,204 +114,226 @@ export default function SingleNewsPage() {
     }
   };
 
+  const handleToggleSent = async () => {
+    if (!newsItem) return;
+    const itemId = newsItem._id || newsItem.id;
+    try {
+      const res = await fetch('/api/gonderildi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: itemId, link: newsItem.link, gonderildi: !newsItem.gonderildi })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setNewsItem(prev => prev ? { ...prev, gonderildi: data.gonderildi } : null);
+        alert(data.message);
+      }
+    } catch (err) {
+      alert('Durum güncellenirken hata oluştu.');
+    }
+  };
+
+  const handleSaveText = async () => {
+    if (!newsItem) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/news/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: newsItem._id || newsItem.id,
+          link: newsItem.link,
+          field: 'content_turkish',
+          value: editableText
+        })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setIsModified(false);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (err) {
+      alert('Kayıt sırasında hata oluştu.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCopyText = () => {
+    navigator.clipboard.writeText(editableText);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 3000);
+  };
+
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 space-y-6 animate-pulse bg-slate-50">
-        <div className="h-6 bg-slate-200 rounded-lg w-1/4" />
-        <div className="h-10 bg-slate-200 rounded-xl w-3/4" />
-        <div className="h-72 bg-slate-200 rounded-3xl" />
-        <div className="space-y-3">
-          <div className="h-4 bg-slate-200 rounded w-full" />
-          <div className="h-4 bg-slate-200 rounded w-5/6" />
-          <div className="h-4 bg-slate-200 rounded w-4/6" />
+      <div className="preview-container">
+        <div style={{ background: 'white', padding: '60px', borderRadius: '10px', textAlign: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
+          <p style={{ color: '#1976d2', fontWeight: 600, fontSize: '1.2em' }}>Ön izleme yükleniyor...</p>
         </div>
       </div>
     );
   }
 
-  if (notFoundState || !newsItem) {
+  if (notFound || !newsItem) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-24 text-center space-y-6 bg-slate-50">
-        <div className="w-16 h-16 rounded-3xl bg-red-50 text-medical-red flex items-center justify-center mx-auto border border-red-200 shadow-sm">
-          <AlertCircle className="w-8 h-8" />
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-black text-slate-900">Aradığınız Haber Bulunamadı</h2>
-          <p className="text-sm text-slate-600 font-medium max-w-md mx-auto">
-            İlgili haber silinmiş, taşınmış veya henüz senkronize edilmemiş olabilir. Ana sayfadaki güncel akıştan diğer sağlık haberlerine göz atabilirsiniz.
-          </p>
-        </div>
-        <div className="pt-2">
-          <Link
-            href="/"
-            className="px-6 py-3 bg-medical-600 hover:bg-medical-700 text-white font-bold text-xs rounded-xl inline-flex items-center space-x-2 shadow-md shadow-medical-600/20 transition-all active:scale-95"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Ana Sayfaya ve Haber Akışına Dön</span>
-          </Link>
+      <div className="preview-container">
+        <div className="empty-state">
+          <h2>📭 Haber Bulunamadı</h2>
+          <p>İstenen haber mevcut değil veya kaldırılmış olabilir.</p>
+          <div style={{ marginTop: '20px' }}>
+            <Link href="/" className="btn btn-primary">
+              ← Tüm Haberlere Dön
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
+
+  const score = newsItem.interest_score || newsItem.interestScore || 8;
+  const displayTitle = newsItem.title_turkish || newsItem.title_english || newsItem.title;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 bg-slate-50">
+    <div className="preview-container">
       
-      {/* Breadcrumbs & Back Button */}
-      <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-        <Link
-          href="/"
-          className="inline-flex items-center space-x-1.5 text-slate-600 hover:text-medical-600 transition"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Tüm Haberlere Dön</span>
+      {/* Preview Header */}
+      <div className="preview-header">
+        <h1>📝 Gönderim Öncesi Ön İzleme</h1>
+        <Link href="/" className="back-link">
+          ← Haberlere Dön
         </Link>
-
-        <span className="hidden sm:inline-block text-slate-400">
-          Ana Sayfa &gt; {newsItem.category || 'Sağlık'} &gt; Detay
-        </span>
       </div>
 
-      {/* Header Info */}
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className="bg-medical-600 text-white text-xs font-black uppercase px-3 py-1 rounded-full tracking-wider shadow-sm">
-            {newsItem.category || 'Sahra Sıhhiye'}
-          </span>
-          <span className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-            Kaynak: {newsItem.source || 'Resmi Sağlık Akışı'}
-          </span>
+      {/* Preview Card */}
+      <div className="preview-card">
+        
+        {/* Card Header (Lacivert Gradient) */}
+        <div className="preview-card-header">
+          <h2>{displayTitle}</h2>
+          <div className="preview-meta">
+            <span>🏷️ <strong>Kategori:</strong> {newsItem.category || 'Sağlık'}</span>
+            <span>🌐 <strong>Kaynak:</strong> {newsItem.source || 'Haber Servisi'}</span>
+            <span>⭐ <strong>İlgi Puanı:</strong> {score}/10</span>
+            <span>📅 <strong>Tarih:</strong> {newsItem.pubDate ? new Date(newsItem.pubDate).toLocaleDateString('tr-TR') : 'Güncel'}</span>
+            <span>{newsItem.gonderildi ? '✅ Gönderildi' : '⏳ Gönderilmedi'}</span>
+          </div>
         </div>
 
-        <h1 className="text-2xl md:text-4xl font-black text-slate-900 leading-tight">
-          {newsItem.title}
-        </h1>
+        {/* AI 3-Maddelik Özet Kutusu */}
+        <div style={{ padding: '20px 25px 0 25px' }}>
+          <div style={{ background: '#e8f5e9', border: '1px solid #c8e6c9', padding: '15px 20px', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <strong style={{ color: '#2e7d32', fontSize: '0.95em' }}>🤖 SAHRA AI TIBBİ 3-MADDE ÖZETİ</strong>
+              {!aiSummary && (
+                <button
+                  onClick={handleFetchAiSummary}
+                  disabled={loadingAi}
+                  className="btn btn-success"
+                  style={{ padding: '5px 12px', fontSize: '0.8em' }}
+                >
+                  {loadingAi ? 'AI Hazırlıyor...' : 'AI Özeti Oluştur'}
+                </button>
+              )}
+            </div>
 
-        <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 border-b border-slate-200 pb-4 gap-4">
-          <div className="flex items-center space-x-4">
-            <span className="flex items-center space-x-1 font-medium">
-              <Clock className="w-4 h-4 text-medical-600" />
-              <span>{newsItem.readTimeMinutes || 3} dk okuma</span>
-            </span>
-            <span>•</span>
-            <span className="flex items-center space-x-1 font-medium">
-              <Eye className="w-4 h-4 text-slate-400" />
-              <span>{newsItem.viewCount || 65} görüntülenme</span>
-            </span>
-            <span>•</span>
-            <span className="font-medium">
-              {newsItem.pubDate ? new Date(newsItem.pubDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Güncel'}
-            </span>
+            {aiSummary ? (
+              <ul style={{ margin: 0, paddingLeft: '20px', color: '#1b5e20', fontSize: '0.9em', lineHeight: '1.6' }}>
+                {aiSummary.map((pt, idx) => (
+                  <li key={idx} style={{ marginBottom: '4px' }}>{pt}</li>
+                ))}
+              </ul>
+            ) : (
+              <p style={{ margin: 0, color: '#388e3c', fontSize: '0.85em' }}>
+                Yapay Zeka hekim modeliyle 3 maddelik hap bilgiyi oluşturmak için butona basabilirsiniz.
+              </p>
+            )}
           </div>
+        </div>
 
-          <div className="flex items-center space-x-2">
+        {/* Card Body & Unified Editor */}
+        <div className="preview-card-body">
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333', fontSize: '0.95em' }}>
+            ✏️ Gönderim Metni (Düzenlenebilir):
+          </label>
+          <textarea
+            className={`unified-editor ${isModified ? 'modified' : ''}`}
+            value={editableText}
+            onChange={e => {
+              setEditableText(e.target.value);
+              setIsModified(true);
+            }}
+          />
+        </div>
+
+        {/* Action Bar */}
+        <div className="action-bar">
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleSaveText}
+              disabled={isSaving || !isModified}
+              className="btn btn-success"
+            >
+              {isSaving ? 'Kaydediliyor...' : '💾 Değişiklikleri Kaydet'}
+            </button>
+
+            <button
+              onClick={handleCopyText}
+              className="btn btn-primary"
+            >
+              📋 Metni Kopyala
+            </button>
+
             <button
               onClick={() => setIsPlayingAudio(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-medical-50 border border-medical-200 text-medical-700 hover:bg-medical-600 hover:text-white transition text-xs font-bold flex items-center space-x-1.5 shadow-sm active:scale-95"
+              className="btn"
+              style={{ background: '#7b1fa2', color: 'white' }}
             >
-              <Volume2 className="w-4 h-4" />
-              <span>Sesli Dinle</span>
+              🎧 Sesli Dinle
             </button>
           </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleToggleSent}
+              className="btn btn-danger"
+            >
+              {newsItem.gonderildi ? '↩️ Gönderilmedi Yap' : '📤 Gönderildi Olarak İşaretle'}
+            </button>
+
+            {newsItem.link && (
+              <a
+                href={newsItem.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary"
+              >
+                🔗 Kaynağa Git
+              </a>
+            )}
+          </div>
         </div>
+
       </div>
 
-      {/* Main Image */}
-      {newsItem.image && (
-        <div className="relative w-full h-[320px] md:h-[440px] rounded-3xl overflow-hidden shadow-md border border-slate-200 bg-slate-100">
-          <Image
-            src={newsItem.image}
-            alt={newsItem.title}
-            fill
-            priority
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 800px"
-          />
+      {saveSuccess && (
+        <div style={{ marginTop: '15px', background: '#c8e6c9', color: '#2e7d32', padding: '12px 20px', borderRadius: '6px', textAlign: 'center', fontWeight: 600 }}>
+          ✓ Metin başarıyla kaydedildi!
         </div>
       )}
 
-      {/* Sahra AI 3-Maddelik Özet Kartı */}
-      <div className="bg-white border border-medical-200 rounded-3xl p-6 md:p-8 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2.5 text-medical-700 font-black text-xs uppercase tracking-wider">
-            <Sparkles className="w-4 h-4 text-medical-600" />
-            <span>🤖 SAHRA AI TIBBİ ÖZETİ (3 MADDE)</span>
-          </div>
-
-          {!aiSummary && (
-            <button
-              onClick={handleFetchAiSummary}
-              disabled={loadingAi}
-              className="px-4 py-1.5 rounded-xl bg-medical-600 hover:bg-medical-700 text-white font-bold text-xs transition shadow-sm disabled:opacity-50"
-            >
-              {loadingAi ? 'AI Özeti Hazırlanıyor...' : 'AI Özeti Oluştur'}
-            </button>
-          )}
+      {copySuccess && (
+        <div style={{ marginTop: '15px', background: '#bbdefb', color: '#1565c0', padding: '12px 20px', borderRadius: '6px', textAlign: 'center', fontWeight: 600 }}>
+          ✓ Metin panoya kopyalandı!
         </div>
+      )}
 
-        {aiSummary ? (
-          <ul className="space-y-3 text-xs md:text-sm text-slate-800 font-medium">
-            {aiSummary.map((pt, idx) => (
-              <li key={idx} className="flex items-start space-x-3 bg-medical-50/60 p-3 rounded-2xl border border-medical-100">
-                <CheckCircle2 className="w-4 h-4 text-medical-600 shrink-0 mt-0.5" />
-                <span className="leading-relaxed">{pt}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-xs text-slate-500 italic">
-            Yapay zeka motorumuz (OpenRouter / Gemini) ile bu haberin 3 maddelik sadeleştirilmiş hekim analizini hemen oluşturabilirsiniz.
-          </p>
-        )}
-      </div>
-
-      {/* Full Content Body */}
-      <div className="bg-white border border-slate-200 p-6 md:p-10 rounded-3xl space-y-6 shadow-sm leading-relaxed text-sm md:text-base text-slate-800">
-        
-        {newsItem.summary && newsItem.summary !== newsItem.content && (
-          <p className="font-bold text-medical-900 text-base md:text-lg border-l-4 border-medical-600 pl-4 py-1 bg-medical-50/30 rounded-r-xl">
-            {newsItem.summary}
-          </p>
-        )}
-
-        <div className="space-y-4 text-slate-700 leading-loose">
-          <p>
-            {newsItem.content || newsItem.summary || newsItem.title}
-          </p>
-          <p className="text-xs text-slate-500 font-medium pt-2">
-            İlgili sıhhiye terimlerinin açıklaması için üzerine geliniz:{' '}
-            <GlossaryTooltip term="Turnike">Turnike (TCCC)</GlossaryTooltip>,{' '}
-            <GlossaryTooltip term="Miyokard İnfarktüsü">Miyokard İnfarktüsü</GlossaryTooltip> veya{' '}
-            <GlossaryTooltip term="Epidemiyoloji">Epidemiyoloji</GlossaryTooltip>.
-          </p>
-        </div>
-
-        {/* Link to External Press Source */}
-        <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs gap-3">
-          <span className="text-slate-500 font-medium">
-            Yayıncı Kaynağı: <strong className="text-slate-900">{newsItem.source}</strong>
-          </span>
-          
-          {newsItem.link && (
-            <a
-              href={newsItem.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-medical-700 font-bold flex items-center space-x-1.5 transition border border-slate-200 shadow-sm"
-            >
-              <span>Orijinal Kaynak Sitesine Git</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          )}
-        </div>
-
-      </div>
-
-      {/* Audio Player Drawer */}
+      {/* Floating Audio Player */}
       {isPlayingAudio && (
         <AudioPlayer
-          title={newsItem.title}
-          textToSpeak={`${newsItem.title}. ${newsItem.summary || newsItem.content || ''}`}
+          title={displayTitle}
+          textToSpeak={editableText}
           onClose={() => setIsPlayingAudio(false)}
         />
       )}
